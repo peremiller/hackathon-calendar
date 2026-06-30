@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HackCal · Tech Hackathon Calendar</title>
+<style>
+  :root{
+    --bg:#0b0f1a; --panel:#121829; --panel2:#1a2138; --line:#26304d;
+    --txt:#e8edf7; --muted:#94a3c4; --accent:#6c8cff; --accent2:#22d3ee;
+    --good:#34d399; --warn:#fbbf24; --bad:#fb7185; --chip:#1f2945;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 80% -10%,#16203a 0%,var(--bg) 55%);
+    color:var(--txt); min-height:100vh; line-height:1.45;
+  }
+  header{
+    position:sticky; top:0; z-index:20; backdrop-filter:blur(10px);
+    background:rgba(11,15,26,.82); border-bottom:1px solid var(--line);
+  }
+  .bar{max-width:1180px; margin:0 auto; padding:14px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:800; font-size:20px; letter-spacing:.3px}
+  .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:17px;box-shadow:var(--shadow)}
+  .brand small{display:block;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
+  .spacer{flex:1}
+  .btn{
+    border:1px solid var(--line); background:var(--panel2); color:var(--txt);
+    padding:8px 14px; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600;
+    display:inline-flex; align-items:center; gap:7px; transition:.15s; white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--accent); transform:translateY(-1px)}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),#5a7bff); border-color:transparent}
+  .seg{display:flex; border:1px solid var(--line); border-radius:10px; overflow:hidden}
+  .seg button{background:var(--panel); border:0; color:var(--muted); padding:8px 14px; cursor:pointer; font-weight:600; font-size:13px}
+  .seg button.on{background:var(--accent); color:#fff}
+
+  main{max-width:1180px; margin:0 auto; padding:20px}
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:18px}
+  input,select,textarea{
+    background:var(--panel); border:1px solid var(--line); color:var(--txt);
+    padding:9px 12px; border-radius:10px; font-size:14px; font-family:inherit;
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  .search{flex:1; min-width:200px}
+  .chips{display:flex; gap:8px; flex-wrap:wrap}
+  .chip{
+    background:var(--chip); border:1px solid var(--line); color:var(--muted);
+    padding:6px 12px; border-radius:999px; font-size:12.5px; cursor:pointer; font-weight:600; transition:.15s;
+  }
+  .chip.on{background:var(--accent); color:#fff; border-color:transparent}
+
+  /* Calendar */
+  .cal-head{display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom:14px}
+  .cal-head h2{margin:0; font-size:20px; min-width:200px; text-align:center}
+  .nav{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);cursor:pointer;font-size:18px}
+  .nav:hover{border-color:var(--accent)}
+  .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:8px}
+  .dow{text-align:center; color:var(--muted); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; padding:4px 0}
+  .cell{
+    min-height:110px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:8px;
+    display:flex; flex-direction:column; gap:5px; overflow:hidden;
+  }
+  .cell.out{opacity:.38}
+  .cell.today{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset}
+  .daynum{font-size:13px; font-weight:700; color:var(--muted); display:flex; justify-content:space-between; align-items:center}
+  .cell.today .daynum{color:var(--accent)}
+  .ev{
+    font-size:11.5px; padding:3px 7px; border-radius:7px; cursor:pointer; font-weight:600;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-left:3px solid;
+    background:var(--panel2);
+  }
+  .ev:hover{filter:brightness(1.25)}
+  .more{font-size:11px; color:var(--muted); cursor:pointer; padding-left:4px}
+
+  /* List */
+  .list{display:flex; flex-direction:column; gap:12px}
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px;
+    display:flex; gap:16px; align-items:flex-start; cursor:pointer; transition:.15s; box-shadow:var(--shadow);
+  }
+  .card:hover{border-color:var(--accent); transform:translateY(-2px)}
+  .date-badge{
+    flex-shrink:0; width:64px; text-align:center; background:var(--panel2); border-radius:12px; padding:8px 0; border:1px solid var(--line);
+  }
+  .date-badge .m{font-size:11px; color:var(--accent2); font-weight:800; text-transform:uppercase; letter-spacing:.5px}
+  .date-badge .d{font-size:24px; font-weight:800; line-height:1}
+  .date-badge .y{font-size:10px; color:var(--muted)}
+  .card h3{margin:0 0 4px; font-size:16.5px}
+  .meta{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
+  .tag{font-size:11px; padding:3px 9px; border-radius:999px; background:var(--chip); color:var(--muted); font-weight:600; border:1px solid var(--line)}
+  .tag.fmt{color:#fff}
+  .card p{margin:6px 0 0; color:var(--muted); font-size:13.5px}
+  .countdown{margin-left:auto; flex-shrink:0; text-align:right; font-size:12px; color:var(--muted)}
+  .countdown b{display:block; font-size:18px; color:var(--accent2)}
+
+  .empty{text-align:center; color:var(--muted); padding:60px 20px}
+  .stats{display:flex; gap:20px; flex-wrap:wrap; margin-bottom:18px; color:var(--muted); font-size:13px}
+  .stats b{color:var(--txt); font-size:18px; display:block}
+
+  /* Modal */
+  .modal-bg{position:fixed; inset:0; background:rgba(5,8,15,.7); backdrop-filter:blur(3px); display:none; place-items:center; z-index:50; padding:20px}
+  .modal-bg.show{display:grid}
+  .modal{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:24px; width:min(560px,100%); max-height:88vh; overflow:auto; box-shadow:var(--shadow)}
+  .modal h2{margin:0 0 4px}
+  .modal .close{float:right; cursor:pointer; color:var(--muted); font-size:22px; line-height:1; background:none;border:0}
+  .field{margin-top:14px; display:flex; flex-direction:column; gap:6px}
+  .field label{font-size:12.5px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.4px}
+  .field input,.field select,.field textarea{width:100%}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .modal-actions{display:flex; gap:10px; margin-top:22px; justify-content:flex-end}
+  .det-row{display:flex; gap:10px; margin-top:10px; font-size:14px}
+  .det-row .k{color:var(--muted); width:90px; flex-shrink:0; font-weight:600}
+  a.link{color:var(--accent2); text-decoration:none}
+  a.link:hover{text-decoration:underline}
+  footer{text-align:center; color:var(--muted); font-size:12px; padding:30px}
+  @media(max-width:720px){
+    .cell{min-height:74px}
+    .ev{font-size:10px}
+    .countdown{display:none}
+    .date-badge{width:54px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand"><span class="logo">⚡</span><div>HackCal<small>Tech Hackathon Calendar</small></div></div>
+    <div class="spacer"></div>
+    <div class="seg" id="viewSeg">
+      <button data-view="month" class="on">📅 Calendar</button>
+      <button data-view="list">📋 List</button>
+    </div>
+    <button class="btn" id="icsBtn">⬇ Export .ics</button>
+    <button class="btn primary" id="addBtn">＋ Add Hackathon</button>
+  </div>
+</header>
+
+<main>
+  <div class="stats" id="stats"></div>
+
+  <div class="controls">
+    <input class="search" id="search" placeholder="🔎 Search hackathons, tech, location…">
+    <select id="fmtFilter">
+      <option value="">All formats</option>
+      <option value="Online">Online</option>
+      <option value="In-person">In-person</option>
+      <option value="Hybrid">Hybrid</option>
+    </select>
+    <label class="chip" id="upcomingOnly" style="display:inline-flex;align-items:center;gap:6px">
+      <input type="checkbox" id="upChk" style="accent-color:var(--accent)"> Upcoming only
+    </label>
+  </div>
+  <div class="chips" id="tagChips"></div>
+
+  <!-- Calendar view -->
+  <section id="monthView">
+    <div class="cal-head">
+      <button class="nav" id="prevM">‹</button>
+      <h2 id="monthLabel"></h2>
+      <button class="nav" id="nextM">›</button>
+      <button class="btn" id="todayBtn" style="margin-left:8px">Today</button>
+    </div>
+    <div class="grid" id="dow"></div>
+    <div class="grid" id="calGrid" style="margin-top:8px"></div>
+  </section>
+
+  <!-- List view -->
+  <section id="listView" style="display:none">
+    <div class="list" id="listEl"></div>
+  </section>
+</main>
+
+<!-- Detail / Add modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal"></div>
+</div>
+
+<footer>HackCal — runs entirely in your browser · data saved to localStorage · <span id="ver"></span></footer>
+
+<script>
+const STORE='hackcal.v1';
+const TECH=['AI/ML','Web3','FinTech','HealthTech','Climate','Gaming','AR/VR','Robotics','Cybersecurity','Open Source','Mobile','Data','DevTools','Hardware'];
+const FMT_COLORS={'Online':'#22d3ee','In-person':'#fb7185','Hybrid':'#a78bfa'};
+const $=s=>document.querySelector(s);
+const pad=n=>String(n).padStart(2,'0');
+const uid=()=>{
+  try{ if(crypto&&crypto.randomUUID) return crypto.randomUUID(); }catch(e){}
+  return 'id-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);
+};
+const todayISO=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
+
+/* ---- seed data (illustrative recurring tech hackathons, dated forward) ---- */
+function seed(){
+  const Y=new Date().getFullYear();
+  const mk=(name,m,d,len,fmt,loc,tags,url,desc)=>{
+    let yr=Y; const start=new Date(Y,m-1,d);
+    if(start < new Date(new Date().toDateString())) yr=Y+1;
+    const s=`${yr}-${pad(m)}-${pad(d)}`;
+    const e=new Date(yr,m-1,d+len-1);
+    return {id:uid(),name,start:s,end:`${e.getFullYear()}-${pad(e.getMonth()+1)}-${pad(e.getDate())}`,fmt,loc,tags,url,desc};
+  };
+  return [
+    mk('MLH Local Hack Day',1,18,1,'Online','Global / Virtual',['AI/ML','Open Source','DevTools'],'https://mlh.io','Major League Hacking community-run beginner-friendly 12-hour build sprint.'),
+    mk('ETHGlobal Hackathon',3,14,3,'In-person','San Francisco, USA',['Web3','Open Source'],'https://ethglobal.com','Flagship Ethereum builder hackathon with major sponsor bounties.'),
+    mk('AI Engineer Hack',2,21,2,'Hybrid','New York, USA',['AI/ML','DevTools','Data'],'https://example.com','Build agents, RAG pipelines and LLM apps over a weekend.'),
+    mk('NASA Space Apps Challenge',10,4,2,'Hybrid','Global / 300+ cities',['Data','Open Source','Hardware'],'https://spaceappschallenge.org','The world’s largest annual civic hackathon, run with NASA open data.'),
+    mk('Hack the North',9,12,3,'In-person','Waterloo, Canada',['AI/ML','Web3','Mobile'],'https://hackthenorth.com','Canada’s biggest hackathon — 1,000+ students, 36 hours.'),
+    mk('Climate Hack',4,25,2,'Online','Global / Virtual',['Climate','Data','AI/ML'],'https://example.com','Sustainability-focused datathon tackling carbon and energy problems.'),
+    mk('FinTech DevCon Hack',5,16,2,'In-person','London, UK',['FinTech','Cybersecurity','Data'],'https://example.com','Payments, open banking and fraud-detection challenges.'),
+    mk('HealthHacks',6,7,2,'Hybrid','Boston, USA',['HealthTech','AI/ML'],'https://example.com','Clinicians + engineers building patient-care prototypes.'),
+    mk('GameDev Jam',7,11,3,'Online','Global / Virtual',['Gaming','AR/VR'],'https://itch.io','48-hour themed game jam, ship a playable build.'),
+    mk('TreeHacks',2,14,3,'In-person','Stanford, USA',['AI/ML','HealthTech','Climate'],'https://treehacks.com','Stanford’s premier hackathon with deep-tech tracks.'),
+    mk('Cybersec CTF & Build',8,22,2,'Online','Global / Virtual',['Cybersecurity','DevTools'],'https://example.com','Capture-the-flag plus defensive-tooling build track.'),
+    mk('Robotics Build Weekend',11,8,2,'In-person','Tokyo, Japan',['Robotics','Hardware'],'https://example.com','Hardware-heavy weekend, on-site fab lab access.'),
+    mk('Junction',11,21,3,'In-person','Helsinki, Finland',['AI/ML','Web3','Hardware'],'https://hackjunction.com','Europe’s leading hackathon, 1,500 hackers.'),
+    mk('Mobile App Sprint',9,27,2,'Hybrid','Berlin, Germany',['Mobile','DevTools'],'https://example.com','Ship a cross-platform app in 36 hours.'),
+    mk('Open Source Day',10,18,1,'Online','Global / Virtual',['Open Source','DevTools'],'https://example.com','Land your first PRs into major OSS projects.'),
+    mk('AR/VR Reality Hack',1,24,3,'In-person','MIT, Cambridge, USA',['AR/VR','Gaming','AI/ML'],'https://mitrealityhack.com','XR-focused hackathon with headset hardware loans.'),
+  ];
+}
+
+let data;
+data = load();
+function load(){
+  try{const v=JSON.parse(localStorage.getItem(STORE)); if(v&&v.length) return v;}catch(e){}
+  const s=seed(); save(s); return s;
+}
+function save(d){data=d||data; localStorage.setItem(STORE,JSON.stringify(data))}
+
+/* ---- state ---- */
+let view='month';
+let cur=new Date(); cur.setDate(1);
+let activeTags=new Set();
+let q='', fmtF='', upOnly=false;
+
+/* ---- filtering ---- */
+function filtered(){
+  const t=todayISO();
+  return data.filter(ev=>{
+    if(fmtF && ev.fmt!==fmtF) return false;
+    if(upOnly && ev.end < t) return false;
+    if(activeTags.size && !ev.tags.some(x=>activeTags.has(x))) return false;
+    if(q){
+      const hay=(ev.name+' '+ev.loc+' '+ev.tags.join(' ')+' '+(ev.desc||'')).toLowerCase();
+      if(!hay.includes(q.toLowerCase())) return false;
+    }
+    return true;
+  });
+}
+
+/* ---- rendering ---- */
+function renderStats(){
+  const t=todayISO();
+  const up=data.filter(e=>e.end>=t).length;
+  const online=data.filter(e=>e.fmt==='Online').length;
+  const next=[...data].filter(e=>e.start>=t).sort((a,b)=>a.start.localeCompare(b.start))[0];
+  let days='—';
+  if(next){const dd=Math.ceil((new Date(next.start)-new Date(t))/864e5); days=dd===0?'Today':dd+'d'}
+  $('#stats').innerHTML=`
+    <div><b>${data.length}</b> total events</div>
+    <div><b>${up}</b> upcoming</div>
+    <div><b>${online}</b> online</div>
+    <div><b>${days}</b> to next ${next?'· '+next.name:''}</div>`;
+}
+
+function renderChips(){
+  const el=$('#tagChips'); el.innerHTML='';
+  TECH.forEach(t=>{
+    const c=document.createElement('div');
+    c.className='chip'+(activeTags.has(t)?' on':'');
+    c.textContent=t;
+    c.onclick=()=>{activeTags.has(t)?activeTags.delete(t):activeTags.add(t); render()};
+    el.appendChild(c);
+  });
+}
+
+function evColor(ev){return FMT_COLORS[ev.fmt]||'#6c8cff'}
+
+function renderMonth(){
+  const dowEl=$('#dow'); dowEl.innerHTML='';
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d=>{
+    const x=document.createElement('div'); x.className='dow'; x.textContent=d; dowEl.appendChild(x);
+  });
+  $('#monthLabel').textContent=cur.toLocaleString('default',{month:'long',year:'numeric'});
+  const grid=$('#calGrid'); grid.innerHTML='';
+  const first=new Date(cur.getFullYear(),cur.getMonth(),1);
+  const startDow=first.getDay();
+  const daysIn=new Date(cur.getFullYear(),cur.getMonth()+1,0).getDate();
+  const prevDays=new Date(cur.getFullYear(),cur.getMonth(),0).getDate();
+  const evs=filtered();
+  const cells=[];
+  for(let i=0;i<startDow;i++) cells.push({d:prevDays-startDow+1+i,out:true,mo:cur.getMonth()-1});
+  for(let i=1;i<=daysIn;i++) cells.push({d:i,out:false,mo:cur.getMonth()});
+  while(cells.length%7) cells.push({d:cells.length-startDow-daysIn+1,out:true,mo:cur.getMonth()+1});
+
+  cells.forEach(c=>{
+    const dt=new Date(cur.getFullYear(),c.mo,c.d);
+    const iso=`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+    const cell=document.createElement('div');
+    cell.className='cell'+(c.out?' out':'')+(iso===todayISO()?' today':'');
+    cell.innerHTML=`<div class="daynum"><span>${c.d}</span></div>`;
+    const dayEvs=evs.filter(e=>iso>=e.start && iso<=e.end);
+    const shown=dayEvs.slice(0,3);
+    shown.forEach(e=>{
+      const x=document.createElement('div');
+      x.className='ev'; x.style.borderLeftColor=evColor(e); x.textContent=e.name;
+      x.onclick=ev=>{ev.stopPropagation(); openDetail(e)};
+      cell.appendChild(x);
+    });
+    if(dayEvs.length>3){
+      const m=document.createElement('div'); m.className='more'; m.textContent=`+${dayEvs.length-3} more`;
+      m.onclick=ev=>{ev.stopPropagation(); openDetail(dayEvs[3])};
+      cell.appendChild(m);
+    }
+    grid.appendChild(cell);
+  });
+}
+
+function fmtDate(iso){const d=new Date(iso+'T00:00');return d.toLocaleDateString('default',{month:'short',day:'numeric',year:'numeric'})}
+function renderList(){
+  const el=$('#listEl'); el.innerHTML='';
+  const t=todayISO();
+  const evs=filtered().sort((a,b)=>a.start.localeCompare(b.start));
+  if(!evs.length){el.innerHTML='<div class="empty">No hackathons match your filters.<br>Try clearing tags or search.</div>';return}
+  evs.forEach(e=>{
+    const d=new Date(e.start+'T00:00');
+    const dd=Math.ceil((new Date(e.start)-new Date(t))/864e5);
+    const cd= e.end<t ? 'Past' : (dd<=0?'Live / Today':dd+' days');
+    const span = e.start!==e.end ? ` – ${fmtDate(e.end)}` : '';
+    const card=document.createElement('div'); card.className='card'; card.onclick=()=>openDetail(e);
+    card.innerHTML=`
+      <div class="date-badge">
+        <div class="m">${d.toLocaleString('default',{month:'short'})}</div>
+        <div class="d">${d.getDate()}</div>
+        <div class="y">${d.getFullYear()}</div>
+      </div>
+      <div style="flex:1">
+        <h3>${esc(e.name)}</h3>
+        <div style="color:var(--muted);font-size:13px">${fmtDate(e.start)}${span} · ${esc(e.loc)}</div>
+        ${e.desc?`<p>${esc(e.desc)}</p>`:''}
+        <div class="meta">
+          <span class="tag fmt" style="background:${evColor(e)}">${e.fmt}</span>
+          ${e.tags.map(tg=>`<span class="tag">${tg}</span>`).join('')}
+        </div>
+      </div>
+      <div class="countdown"><b>${e.end<t?'✓':dd<=0?'🔴':dd}</b>${cd}</div>`;
+    el.appendChild(card);
+  });
+}
+
+function render(){
+  renderStats(); renderChips();
+  $('#monthView').style.display = view==='month'?'':'none';
+  $('#listView').style.display = view==='list'?'':'none';
+  if(view==='month') renderMonth(); else renderList();
+}
+
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* ---- detail modal ---- */
+function openDetail(e){
+  const t=todayISO();
+  const dd=Math.ceil((new Date(e.start)-new Date(t))/864e5);
+  const status = e.end<t?'Past event':(dd<=0?'Happening now':`In ${dd} day${dd===1?'':'s'}`);
+  $('#modal').innerHTML=`
+    <button class="close" onclick="closeModal()">×</button>
+    <h2>${esc(e.name)}</h2>
+    <div style="color:var(--accent2);font-weight:700;font-size:13px">${status}</div>
+    <div class="det-row"><span class="k">Dates</span><span>${fmtDate(e.start)}${e.start!==e.end?' – '+fmtDate(e.end):''}</span></div>
+    <div class="det-row"><span class="k">Format</span><span><span class="tag fmt" style="background:${evColor(e)}">${e.fmt}</span></span></div>
+    <div class="det-row"><span class="k">Location</span><span>${esc(e.loc)}</span></div>
+    <div class="det-row"><span class="k">Tech</span><span>${e.tags.map(tg=>`<span class="tag">${tg}</span>`).join(' ')}</span></div>
+    ${e.desc?`<div class="det-row"><span class="k">About</span><span>${esc(e.desc)}</span></div>`:''}
+    ${e.url?`<div class="det-row"><span class="k">Link</span><a class="link" href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.url)} ↗</a></div>`:''}
+    <div class="modal-actions">
+      <button class="btn" onclick="downloadICS('${e.id}')">⬇ Add to calendar (.ics)</button>
+      <button class="btn" onclick="editEvent('${e.id}')">✎ Edit</button>
+      <button class="btn" style="border-color:var(--bad);color:var(--bad)" onclick="delEvent('${e.id}')">🗑 Delete</button>
+    </div>`;
+  showModal();
+}
+
+/* ---- add / edit form ---- */
+function openForm(ev){
+  const e=ev||{name:'',start:todayISO(),end:todayISO(),fmt:'Online',loc:'',tags:[],url:'',desc:''};
+  $('#modal').innerHTML=`
+    <button class="close" onclick="closeModal()">×</button>
+    <h2>${ev?'Edit':'Add'} Hackathon</h2>
+    <div class="field"><label>Name</label><input id="f_name" value="${esc(e.name)}" placeholder="e.g. AI Agents Hack 2026"></div>
+    <div class="row2">
+      <div class="field"><label>Start date</label><input id="f_start" type="date" value="${e.start}"></div>
+      <div class="field"><label>End date</label><input id="f_end" type="date" value="${e.end}"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Format</label><select id="f_fmt">
+        ${['Online','In-person','Hybrid'].map(f=>`<option ${e.fmt===f?'selected':''}>${f}</option>`).join('')}
+      </select></div>
+      <div class="field"><label>Location</label><input id="f_loc" value="${esc(e.loc)}" placeholder="City, Country / Virtual"></div>
+    </div>
+    <div class="field"><label>Tech tags (comma-separated)</label><input id="f_tags" value="${esc(e.tags.join(', '))}" placeholder="AI/ML, Web3, …"></div>
+    <div class="field"><label>Website / register URL</label><input id="f_url" value="${esc(e.url||'')}" placeholder="https://…"></div>
+    <div class="field"><label>Description</label><textarea id="f_desc" rows="3" placeholder="What's it about?">${esc(e.desc||'')}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="saveForm('${ev?ev.id:''}')">Save</button>
+    </div>`;
+  showModal();
+}
+function saveForm(id){
+  const name=$('#f_name').value.trim(); if(!name){alert('Name is required');return}
+  let start=$('#f_start').value, end=$('#f_end').value||start;
+  if(end<start) end=start;
+  const obj={
+    id:id||uid(), name, start, end,
+    fmt:$('#f_fmt').value, loc:$('#f_loc').value.trim()||'TBD',
+    tags:$('#f_tags').value.split(',').map(s=>s.trim()).filter(Boolean),
+    url:$('#f_url').value.trim(), desc:$('#f_desc').value.trim()
+  };
+  if(id){data=data.map(e=>e.id===id?obj:e)} else {data.push(obj)}
+  save(); closeModal(); render();
+}
+function editEvent(id){openForm(data.find(e=>e.id===id))}
+function delEvent(id){
+  if(!confirm('Delete this hackathon?'))return;
+  data=data.filter(e=>e.id!==id); save(); closeModal(); render();
+}
+
+/* ---- .ics export ---- */
+function icsDate(iso){return iso.replace(/-/g,'')}
+function icsForEvents(evs){
+  let out='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//HackCal//EN\r\nCALSCALE:GREGORIAN\r\n';
+  evs.forEach(e=>{
+    const endNext=new Date(e.end+'T00:00'); endNext.setDate(endNext.getDate()+1);
+    const dtend=`${endNext.getFullYear()}${pad(endNext.getMonth()+1)}${pad(endNext.getDate())}`;
+    out+='BEGIN:VEVENT\r\n';
+    out+=`UID:${e.id}@hackcal\r\n`;
+    out+=`DTSTART;VALUE=DATE:${icsDate(e.start)}\r\n`;
+    out+=`DTEND;VALUE=DATE:${dtend}\r\n`;
+    out+=`SUMMARY:${icsEsc(e.name)}\r\n`;
+    out+=`LOCATION:${icsEsc(e.loc)}\r\n`;
+    out+=`DESCRIPTION:${icsEsc((e.fmt+' · '+e.tags.join(', ')+(e.desc?' — '+e.desc:'')+(e.url?'\\n'+e.url:'')))}\r\n`;
+    if(e.url) out+=`URL:${e.url}\r\n`;
+    out+='END:VEVENT\r\n';
+  });
+  out+='END:VCALENDAR\r\n'; return out;
+}
+function icsEsc(s){return String(s).replace(/[\\,;]/g,m=>'\\'+m).replace(/\n/g,'\\n')}
+function downloadFile(name,text){
+  const b=new Blob([text],{type:'text/calendar'}); const u=URL.createObjectURL(b);
+  const a=document.createElement('a'); a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u);
+}
+function downloadICS(id){const e=data.find(x=>x.id===id); downloadFile(slug(e.name)+'.ics',icsForEvents([e]))}
+function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+
+/* ---- modal helpers ---- */
+function showModal(){$('#modalBg').classList.add('show')}
+function closeModal(){$('#modalBg').classList.remove('show')}
+$('#modalBg').onclick=e=>{if(e.target===$('#modalBg'))closeModal()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+/* ---- wire up ---- */
+$('#viewSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  view=b.dataset.view;
+  $('#viewSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+  render();
+});
+$('#prevM').onclick=()=>{cur.setMonth(cur.getMonth()-1);renderMonth()};
+$('#nextM').onclick=()=>{cur.setMonth(cur.getMonth()+1);renderMonth()};
+$('#todayBtn').onclick=()=>{cur=new Date();cur.setDate(1);renderMonth()};
+$('#addBtn').onclick=()=>openForm(null);
+$('#icsBtn').onclick=()=>downloadFile('hackcal-all.ics',icsForEvents(filtered()));
+$('#search').oninput=e=>{q=e.target.value;render()};
+$('#fmtFilter').onchange=e=>{fmtF=e.target.value;render()};
+$('#upChk').onchange=e=>{upOnly=e.target.checked;render()};
+$('#ver').textContent='v1 · '+data.length+' events seeded';
+
+render();
+</script>
+</body>
+</html>
