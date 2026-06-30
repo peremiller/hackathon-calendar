@@ -4,7 +4,7 @@ A single-file, offline-first web app for browsing, tracking, and exporting tech
 hackathons. No build step, no dependencies, no backend — one `index.html` that
 runs entirely in your browser and saves everything to `localStorage`.
 
-**Live:** https://hackathon-calendar.vercel.app
+**Live:** https://hackathon-calendar-umber.vercel.app
 
 ## Features
 
