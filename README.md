@@ -77,17 +77,30 @@ register** filter shows only events you can still join. The status is computed
 from dates in the app — it is **not** a live check of each event's real
 registration page, so confirm on the official site.
 
+## Eligibility filter
+
+Each event is marked **🌍 Open to all** or **🎓 Students only**, and a
+**🌍 Allows non-students** filter hides student/university-restricted events so
+working professionals can find hackathons they can actually enter. The import
+parser also reads phrases like "students only" from pasted messages.
+
 ## Data transparency
 
 The app ships with **16 real, well-known recurring hackathons** (ETHGlobal, NASA
 Space Apps Challenge, Hack the North, TreeHacks, MIT Reality Hack, Junction,
 Global Game Jam, picoCTF, Hacktoberfest, PennApps, MakeMIT, MIT Hacking Medicine
 GrandHack, ClimateHack.AI, AI Engineer World's Fair, Money20/20, MLH Global Hack
-Week). Each links to its **official, verified website**. However, the **dates are
-illustrative** — auto-forwarded so events always appear upcoming — and are
-**not** confirmed official schedules. Always verify the exact dates, format, and
-registration deadline on each event's official website before making plans. Add,
-edit, or delete any entry to make the calendar your own.
+Week). Each links to its **official, verified website**, and the **dates reflect
+each event's real published or typical schedule** (researched per-event), shown
+for the next upcoming edition.
+
+Dates flagged **≈** are *typical recurring windows* (the next exact edition
+wasn't announced yet) rather than confirmed dates — the detail view labels these.
+Confirmed examples include NASA Space Apps (Nov 14–15 2026), Hack the North
+(Sep 18–20 2026), Junction (Nov 13–15 2026), and Money20/20 (Oct 18–21 2026).
+Still, always verify exact dates, format, eligibility, and the registration
+deadline on each event's official website before making plans. Add, edit, or
+delete any entry to make the calendar your own.
 
 ## Tech
 

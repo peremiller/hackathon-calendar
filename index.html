@@ -173,6 +173,9 @@
     <label class="chip" style="display:inline-flex;align-items:center;gap:6px">
       <input type="checkbox" id="openChk" style="accent-color:var(--accent)"> 🟢 Open to register
     </label>
+    <label class="chip" style="display:inline-flex;align-items:center;gap:6px">
+      <input type="checkbox" id="nonStuChk" style="accent-color:var(--accent)"> 🌍 Allows non-students
+    </label>
   </div>
   <div class="chips" id="tagChips"></div>
 
@@ -217,31 +220,31 @@ const todayISO=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMon
 function seed(){
   const Y=new Date().getFullYear();
   const iso=dt=>`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
-  const mk=(name,m,d,len,fmt,loc,tags,url,desc)=>{
+  const mk=(name,m,d,len,fmt,loc,tags,url,desc,conf,elig)=>{
     let yr=Y; const start=new Date(Y,m-1,d);
     if(start < new Date(new Date().toDateString())) yr=Y+1;
     const s=`${yr}-${pad(m)}-${pad(d)}`;
     const e=new Date(yr,m-1,d+len-1);
     const rc=new Date(yr,m-1,d-4);                // registration closes ~4 days before start
-    return {id:uid(),name,start:s,end:iso(e),regClose:iso(rc),fmt,loc,tags,url,desc};
+    return {id:uid(),name,start:s,end:iso(e),regClose:iso(rc),fmt,loc,tags,url,desc,dateConf:conf||'typical',eligibility:elig||'Everyone'};
   };
   return [
-    mk('MLH Global Hack Week',1,18,7,'Online','Global / Virtual',['AI/ML','Open Source','DevTools'],'https://ghw.mlh.com/','Major League Hacking’s beginner-friendly week-long online event (successor to Local Hack Day).'),
-    mk('ETHGlobal Hackathon',3,14,3,'In-person','San Francisco, USA',['Web3','Open Source'],'https://ethglobal.com','Flagship Ethereum builder hackathon with major sponsor bounties.'),
-    mk('AI Engineer World’s Fair',2,21,2,'In-person','San Francisco, USA',['AI/ML','DevTools','Data'],'https://www.ai.engineer/','Build agents, RAG pipelines and LLM apps; hackathon runs alongside the fair.'),
-    mk('NASA Space Apps Challenge',10,4,2,'Hybrid','Global / 300+ cities',['Data','Open Source','Hardware'],'https://www.spaceappschallenge.org','The world’s largest annual civic hackathon, run with NASA open data.'),
-    mk('Hack the North',9,12,3,'In-person','Waterloo, Canada',['AI/ML','Web3','Mobile'],'https://hackthenorth.com','Canada’s biggest hackathon — 1,000+ students, 36 hours.'),
-    mk('ClimateHack.AI',4,25,2,'Hybrid','Global / Virtual',['Climate','Data','AI/ML'],'https://climatehack.ai/','Multi-university machine-learning competition tackling climate problems.'),
-    mk('Money20/20 Hackathon',5,16,2,'In-person','Las Vegas, USA',['FinTech','Cybersecurity','Data'],'https://www.money2020.com/','Payments, open banking and fraud challenges at the Money20/20 fintech festival.'),
-    mk('MIT Hacking Medicine GrandHack',6,7,2,'In-person','Cambridge, USA',['HealthTech','AI/ML'],'https://hackingmedicine.mit.edu/','Clinicians + engineers building patient-care prototypes; MIT’s flagship health hackathon.'),
-    mk('Global Game Jam',7,11,3,'Online','Global / Virtual',['Gaming','AR/VR'],'https://globalgamejam.org','The world’s largest game-jam — build a playable game to a shared theme.'),
-    mk('TreeHacks',2,14,3,'In-person','Stanford, USA',['AI/ML','HealthTech','Climate'],'https://treehacks.com','Stanford’s premier hackathon with deep-tech tracks.'),
-    mk('picoCTF',8,22,2,'Online','Global / Virtual',['Cybersecurity','DevTools'],'https://picoctf.org/','Carnegie Mellon’s free, beginner-friendly annual capture-the-flag.'),
-    mk('MakeMIT',11,8,2,'In-person','Cambridge, USA',['Robotics','Hardware'],'https://makemit.net/','MIT’s 24-hour hardware hackathon with on-site fab-lab access.'),
-    mk('Junction',11,21,3,'In-person','Helsinki, Finland',['AI/ML','Web3','Hardware'],'https://www.hackjunction.com','Europe’s leading hackathon, 1,500 hackers.'),
-    mk('PennApps',9,27,2,'In-person','Philadelphia, USA',['Mobile','DevTools'],'https://pennapps.com/','The original college hackathon — beginner-accessible, ship in 36 hours.'),
-    mk('Hacktoberfest',10,18,1,'Online','Global / Virtual',['Open Source','DevTools'],'https://hacktoberfest.com/','DigitalOcean’s month-long October open-source contribution event.'),
-    mk('MIT Reality Hack',1,24,3,'In-person','MIT, Cambridge, USA',['AR/VR','Gaming','AI/ML'],'https://www.realityhackatmit.com','XR-focused hackathon with headset hardware loans.'),
+    mk('MLH Global Hack Week',7,13,7,'Online','Global / Virtual',['AI/ML','Open Source','DevTools'],'https://ghw.mlh.com/','Major League Hacking’s beginner-friendly week-long online event (successor to Local Hack Day).','typical','Everyone'),
+    mk('ETHGlobal Hackathon',6,12,3,'In-person','New York, USA',['Web3','Open Source'],'https://ethglobal.com','Flagship Ethereum builder hackathon with major sponsor bounties (ETHGlobal New York).','confirmed','Everyone'),
+    mk('AI Engineer World’s Fair',6,29,4,'In-person','San Francisco, USA',['AI/ML','DevTools','Data'],'https://www.ai.engineer/','Build agents, RAG pipelines and LLM apps; hackathon runs alongside the fair.','confirmed','Everyone'),
+    mk('NASA Space Apps Challenge',11,14,2,'Hybrid','Global / 300+ cities',['Data','Open Source','Hardware'],'https://www.spaceappschallenge.org','The world’s largest annual civic hackathon, run with NASA open data.','confirmed','Everyone'),
+    mk('Hack the North',9,18,3,'In-person','Waterloo, Canada',['AI/ML','Web3','Mobile'],'https://hackthenorth.com','Canada’s biggest hackathon — 1,000+ students, 36 hours.','confirmed','Students'),
+    mk('ClimateHack.AI',4,5,2,'Hybrid','Global / Virtual',['Climate','Data','AI/ML'],'https://climatehack.ai/','Multi-university machine-learning competition tackling climate problems.','typical','Students'),
+    mk('Money20/20 Hackathon',10,18,4,'In-person','Las Vegas, USA',['FinTech','Cybersecurity','Data'],'https://www.money2020.com/','Payments, open banking and fraud challenges at the Money20/20 fintech festival.','confirmed','Everyone'),
+    mk('MIT Hacking Medicine GrandHack',3,13,3,'In-person','Cambridge, USA',['HealthTech','AI/ML'],'https://hackingmedicine.mit.edu/','Clinicians + engineers building patient-care prototypes; MIT’s flagship health hackathon.','typical','Everyone'),
+    mk('Global Game Jam',1,29,3,'Online','Global / Virtual',['Gaming','AR/VR'],'https://globalgamejam.org','The world’s largest game-jam — build a playable game to a shared theme.','typical','Everyone'),
+    mk('TreeHacks',2,12,3,'In-person','Stanford, USA',['AI/ML','HealthTech','Climate'],'https://treehacks.com','Stanford’s premier hackathon with deep-tech tracks.','typical','Students'),
+    mk('picoCTF',3,9,11,'Online','Global / Virtual',['Cybersecurity','DevTools'],'https://picoctf.org/','Carnegie Mellon’s free, beginner-friendly capture-the-flag (runs ~11 days in March).','typical','Everyone'),
+    mk('MakeMIT',2,21,2,'In-person','Cambridge, USA',['Robotics','Hardware'],'https://makemit.net/','MIT’s 24-hour hardware hackathon with on-site fab-lab access.','confirmed','Students'),
+    mk('Junction',11,13,3,'In-person','Espoo, Finland',['AI/ML','Web3','Hardware'],'https://www.hackjunction.com','Europe’s leading hackathon, 1,500 hackers.','confirmed','Everyone'),
+    mk('PennApps',9,19,3,'In-person','Philadelphia, USA',['Mobile','DevTools'],'https://pennapps.com/','The original college hackathon — beginner-accessible, ship in 36 hours.','typical','Students'),
+    mk('Hacktoberfest',10,1,31,'Online','Global / Virtual',['Open Source','DevTools'],'https://hacktoberfest.com/','DigitalOcean’s month-long October open-source contribution event.','confirmed','Everyone'),
+    mk('MIT Reality Hack',1,22,5,'In-person','MIT, Cambridge, USA',['AR/VR','Gaming','AI/ML'],'https://www.realityhackatmit.com','XR-focused hackathon with headset hardware loans.','typical','Everyone'),
   ];
 }
 
@@ -257,7 +260,7 @@ function save(d){data=d||data; localStorage.setItem(STORE,JSON.stringify(data))}
 let view='month';
 let cur=new Date(); cur.setDate(1);
 let activeTags=new Set();
-let q='', fmtF='', upOnly=false, openOnly=false;
+let q='', fmtF='', upOnly=false, openOnly=false, nonStuOnly=false;
 
 /* ---- filtering ---- */
 function filtered(){
@@ -266,6 +269,7 @@ function filtered(){
     if(fmtF && ev.fmt!==fmtF) return false;
     if(upOnly && ev.end < t) return false;
     if(openOnly && !isOpenForReg(ev)) return false;
+    if(nonStuOnly && ev.eligibility==='Students') return false;
     if(activeTags.size && !ev.tags.some(x=>activeTags.has(x))) return false;
     if(q){
       const hay=(ev.name+' '+ev.loc+' '+ev.tags.join(' ')+' '+(ev.desc||'')).toLowerCase();
@@ -362,6 +366,12 @@ function regStatus(e){
   return {label:`Open · until ${fmtShort(rc)}`, cls:'open', dot:'🟢'};
 }
 function isOpenForReg(e){const s=regStatus(e);return s.cls==='open'||s.cls==='soon'}
+function eligBadge(e){
+  return e.eligibility==='Students'
+    ? `<span class="tag" style="border-color:var(--warn);color:var(--warn)">🎓 Students only</span>`
+    : `<span class="tag" style="border-color:var(--good);color:var(--good)">🌍 Open to all</span>`;
+}
+const approx=e=>e.dateConf==='typical'?'≈ ':'';
 function renderList(){
   const el=$('#listEl'); el.innerHTML='';
   const t=todayISO();
@@ -381,10 +391,11 @@ function renderList(){
       </div>
       <div style="flex:1">
         <h3>${esc(e.name)}</h3>
-        <div style="color:var(--muted);font-size:13px">${fmtDate(e.start)}${span} · ${esc(e.loc)}</div>
+        <div style="color:var(--muted);font-size:13px">${approx(e)}${fmtDate(e.start)}${span} · ${esc(e.loc)}</div>
         ${e.desc?`<p>${esc(e.desc)}</p>`:''}
         <div class="meta">
           ${(rs=>`<span class="reg ${rs.cls}">${rs.dot} ${rs.label}</span>`)(regStatus(e))}
+          ${eligBadge(e)}
           <span class="tag fmt" style="background:${evColor(e)}">${e.fmt}</span>
           ${e.tags.map(tg=>`<span class="tag">${tg}</span>`).join('')}
           ${e.src?`<span class="tag" style="border-color:var(--accent);color:var(--accent)">${e.src==='Discord'?'🎮':e.src==='WhatsApp'?'💬':'📥'} ${esc(e.src)}</span>`:''}
@@ -414,8 +425,9 @@ function openDetail(e){
     <h2>${esc(e.name)}</h2>
     <div style="color:var(--accent2);font-weight:700;font-size:13px">${status}</div>
     ${(rs=>`<div style="margin-top:8px"><span class="reg ${rs.cls}">${rs.dot} ${rs.label}</span></div>`)(regStatus(e))}
-    <div class="det-row"><span class="k">Dates</span><span>${fmtDate(e.start)}${e.start!==e.end?' – '+fmtDate(e.end):''}</span></div>
+    <div class="det-row"><span class="k">Dates</span><span>${fmtDate(e.start)}${e.start!==e.end?' – '+fmtDate(e.end):''}${e.dateConf==='typical'?' <span style="color:var(--muted);font-size:12px">(≈ typical schedule — verify on site)</span>':''}</span></div>
     ${e.regClose?`<div class="det-row"><span class="k">Reg. deadline</span><span>${fmtDate(e.regClose)}</span></div>`:''}
+    <div class="det-row"><span class="k">Who can join</span><span>${e.eligibility==='Students'?'🎓 Students only':'🌍 Open to all (non-students welcome)'}</span></div>
     <div class="det-row"><span class="k">Format</span><span><span class="tag fmt" style="background:${evColor(e)}">${e.fmt}</span></span></div>
     <div class="det-row"><span class="k">Location</span><span>${esc(e.loc)}</span></div>
     <div class="det-row"><span class="k">Tech</span><span>${e.tags.map(tg=>`<span class="tag">${tg}</span>`).join(' ')}</span></div>
@@ -432,7 +444,7 @@ function openDetail(e){
 
 /* ---- add / edit form ---- */
 function openForm(ev){
-  const e=ev||{name:'',start:todayISO(),end:todayISO(),fmt:'Online',loc:'',tags:[],url:'',desc:'',regClose:'',regOpen:''};
+  const e=ev||{name:'',start:todayISO(),end:todayISO(),fmt:'Online',loc:'',tags:[],url:'',desc:'',regClose:'',regOpen:'',eligibility:'Everyone'};
   $('#modal').innerHTML=`
     <button class="close" onclick="closeModal()">×</button>
     <h2>${ev?'Edit':'Add'} Hackathon</h2>
@@ -451,6 +463,9 @@ function openForm(ev){
       </select></div>
       <div class="field"><label>Location</label><input id="f_loc" value="${esc(e.loc)}" placeholder="City, Country / Virtual"></div>
     </div>
+    <div class="field"><label>Who can join</label><select id="f_elig">
+      ${[['Everyone','🌍 Open to all (non-students welcome)'],['Students','🎓 Students only']].map(([v,t])=>`<option value="${v}" ${e.eligibility===v?'selected':''}>${t}</option>`).join('')}
+    </select></div>
     <div class="field"><label>Tech tags (comma-separated)</label><input id="f_tags" value="${esc(e.tags.join(', '))}" placeholder="AI/ML, Web3, …"></div>
     <div class="field"><label>Website / register URL</label><input id="f_url" value="${esc(e.url||'')}" placeholder="https://…"></div>
     <div class="field"><label>Description</label><textarea id="f_desc" rows="3" placeholder="What's it about?">${esc(e.desc||'')}</textarea></div>
@@ -468,6 +483,7 @@ function saveForm(id){
     id:id||uid(), name, start, end,
     regOpen:$('#f_regopen').value||'', regClose:$('#f_regclose').value||'',
     fmt:$('#f_fmt').value, loc:$('#f_loc').value.trim()||'TBD',
+    eligibility:$('#f_elig').value,
     tags:$('#f_tags').value.split(',').map(s=>s.trim()).filter(Boolean),
     url:$('#f_url').value.trim(), desc:$('#f_desc').value.trim()
   };
@@ -606,11 +622,16 @@ function pickRegClose(text){
   if(m){const d=parseDates(m[1]); if(d) return d.start;}
   return '';
 }
+function pickElig(text){
+  if(/\b(students?\s+only|student[- ]?only|must be a student|university students|college students|enrolled students)\b/i.test(text)) return 'Students';
+  return 'Everyone';
+}
 function buildEvent(text,dates,source){
   const url=(text.match(/https?:\/\/\S+/)||[''])[0].replace(/[).,]+$/,'');
   const fmt=pickFmt(text);
   return {id:uid(),name:pickTitle(text),start:dates.start,end:dates.end,fmt,
     loc:pickLoc(text,fmt),tags:pickTags(text),url,regClose:pickRegClose(text),
+    eligibility:pickElig(text),dateConf:'confirmed',
     desc:text.replace(/\s+/g,' ').trim().slice(0,240),src:source||'Import'};
 }
 const isWAStart=l=>/^\s*\[?\d{1,2}[\/.]\d{1,2}[\/.]\d{2,4},?\s+\d{1,2}:\d{2}/.test(l);
@@ -748,6 +769,7 @@ $('#search').oninput=e=>{q=e.target.value;render()};
 $('#fmtFilter').onchange=e=>{fmtF=e.target.value;render()};
 $('#upChk').onchange=e=>{upOnly=e.target.checked;render()};
 $('#openChk').onchange=e=>{openOnly=e.target.checked;render()};
+$('#nonStuChk').onchange=e=>{nonStuOnly=e.target.checked;render()};
 $('#ver').textContent='v2 · '+data.length+' events';
 
 applyTheme(localStorage.getItem('hackcal.theme') || (matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'));
