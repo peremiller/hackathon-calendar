@@ -102,6 +102,11 @@
   .meta{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
   .tag{font-size:11px; padding:3px 9px; border-radius:999px; background:var(--chip); color:var(--muted); font-weight:600; border:1px solid var(--line)}
   .tag.fmt{color:#fff}
+  .reg{font-size:11px; padding:3px 9px; border-radius:999px; font-weight:700; border:1px solid transparent; white-space:nowrap}
+  .reg.open{color:var(--good); border-color:color-mix(in srgb,var(--good) 45%,transparent); background:color-mix(in srgb,var(--good) 14%,transparent)}
+  .reg.soon{color:var(--warn); border-color:color-mix(in srgb,var(--warn) 50%,transparent); background:color-mix(in srgb,var(--warn) 15%,transparent)}
+  .reg.closed{color:var(--muted); border-color:var(--line); background:var(--chip)}
+  .reg.preopen{color:var(--accent2); border-color:color-mix(in srgb,var(--accent2) 45%,transparent); background:color-mix(in srgb,var(--accent2) 13%,transparent)}
   .card p{margin:6px 0 0; color:var(--muted); font-size:13.5px}
   .countdown{margin-left:auto; flex-shrink:0; text-align:right; font-size:12px; color:var(--muted)}
   .countdown b{display:block; font-size:18px; color:var(--accent2)}
@@ -165,6 +170,9 @@
     <label class="chip" id="upcomingOnly" style="display:inline-flex;align-items:center;gap:6px">
       <input type="checkbox" id="upChk" style="accent-color:var(--accent)"> Upcoming only
     </label>
+    <label class="chip" style="display:inline-flex;align-items:center;gap:6px">
+      <input type="checkbox" id="openChk" style="accent-color:var(--accent)"> 🟢 Open to register
+    </label>
   </div>
   <div class="chips" id="tagChips"></div>
 
@@ -208,30 +216,32 @@ const todayISO=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMon
 /* ---- seed data (illustrative recurring tech hackathons, dated forward) ---- */
 function seed(){
   const Y=new Date().getFullYear();
+  const iso=dt=>`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
   const mk=(name,m,d,len,fmt,loc,tags,url,desc)=>{
     let yr=Y; const start=new Date(Y,m-1,d);
     if(start < new Date(new Date().toDateString())) yr=Y+1;
     const s=`${yr}-${pad(m)}-${pad(d)}`;
     const e=new Date(yr,m-1,d+len-1);
-    return {id:uid(),name,start:s,end:`${e.getFullYear()}-${pad(e.getMonth()+1)}-${pad(e.getDate())}`,fmt,loc,tags,url,desc};
+    const rc=new Date(yr,m-1,d-4);                // registration closes ~4 days before start
+    return {id:uid(),name,start:s,end:iso(e),regClose:iso(rc),fmt,loc,tags,url,desc};
   };
   return [
-    mk('MLH Local Hack Day',1,18,1,'Online','Global / Virtual',['AI/ML','Open Source','DevTools'],'https://mlh.io','Major League Hacking community-run beginner-friendly 12-hour build sprint.'),
+    mk('MLH Global Hack Week',1,18,7,'Online','Global / Virtual',['AI/ML','Open Source','DevTools'],'https://ghw.mlh.com/','Major League Hacking’s beginner-friendly week-long online event (successor to Local Hack Day).'),
     mk('ETHGlobal Hackathon',3,14,3,'In-person','San Francisco, USA',['Web3','Open Source'],'https://ethglobal.com','Flagship Ethereum builder hackathon with major sponsor bounties.'),
-    mk('AI Engineer Hack',2,21,2,'Hybrid','New York, USA',['AI/ML','DevTools','Data'],'https://example.com','Build agents, RAG pipelines and LLM apps over a weekend.'),
-    mk('NASA Space Apps Challenge',10,4,2,'Hybrid','Global / 300+ cities',['Data','Open Source','Hardware'],'https://spaceappschallenge.org','The world’s largest annual civic hackathon, run with NASA open data.'),
+    mk('AI Engineer World’s Fair',2,21,2,'In-person','San Francisco, USA',['AI/ML','DevTools','Data'],'https://www.ai.engineer/','Build agents, RAG pipelines and LLM apps; hackathon runs alongside the fair.'),
+    mk('NASA Space Apps Challenge',10,4,2,'Hybrid','Global / 300+ cities',['Data','Open Source','Hardware'],'https://www.spaceappschallenge.org','The world’s largest annual civic hackathon, run with NASA open data.'),
     mk('Hack the North',9,12,3,'In-person','Waterloo, Canada',['AI/ML','Web3','Mobile'],'https://hackthenorth.com','Canada’s biggest hackathon — 1,000+ students, 36 hours.'),
-    mk('Climate Hack',4,25,2,'Online','Global / Virtual',['Climate','Data','AI/ML'],'https://example.com','Sustainability-focused datathon tackling carbon and energy problems.'),
-    mk('FinTech DevCon Hack',5,16,2,'In-person','London, UK',['FinTech','Cybersecurity','Data'],'https://example.com','Payments, open banking and fraud-detection challenges.'),
-    mk('HealthHacks',6,7,2,'Hybrid','Boston, USA',['HealthTech','AI/ML'],'https://example.com','Clinicians + engineers building patient-care prototypes.'),
-    mk('GameDev Jam',7,11,3,'Online','Global / Virtual',['Gaming','AR/VR'],'https://itch.io','48-hour themed game jam, ship a playable build.'),
+    mk('ClimateHack.AI',4,25,2,'Hybrid','Global / Virtual',['Climate','Data','AI/ML'],'https://climatehack.ai/','Multi-university machine-learning competition tackling climate problems.'),
+    mk('Money20/20 Hackathon',5,16,2,'In-person','Las Vegas, USA',['FinTech','Cybersecurity','Data'],'https://www.money2020.com/','Payments, open banking and fraud challenges at the Money20/20 fintech festival.'),
+    mk('MIT Hacking Medicine GrandHack',6,7,2,'In-person','Cambridge, USA',['HealthTech','AI/ML'],'https://hackingmedicine.mit.edu/','Clinicians + engineers building patient-care prototypes; MIT’s flagship health hackathon.'),
+    mk('Global Game Jam',7,11,3,'Online','Global / Virtual',['Gaming','AR/VR'],'https://globalgamejam.org','The world’s largest game-jam — build a playable game to a shared theme.'),
     mk('TreeHacks',2,14,3,'In-person','Stanford, USA',['AI/ML','HealthTech','Climate'],'https://treehacks.com','Stanford’s premier hackathon with deep-tech tracks.'),
-    mk('Cybersec CTF & Build',8,22,2,'Online','Global / Virtual',['Cybersecurity','DevTools'],'https://example.com','Capture-the-flag plus defensive-tooling build track.'),
-    mk('Robotics Build Weekend',11,8,2,'In-person','Tokyo, Japan',['Robotics','Hardware'],'https://example.com','Hardware-heavy weekend, on-site fab lab access.'),
-    mk('Junction',11,21,3,'In-person','Helsinki, Finland',['AI/ML','Web3','Hardware'],'https://hackjunction.com','Europe’s leading hackathon, 1,500 hackers.'),
-    mk('Mobile App Sprint',9,27,2,'Hybrid','Berlin, Germany',['Mobile','DevTools'],'https://example.com','Ship a cross-platform app in 36 hours.'),
-    mk('Open Source Day',10,18,1,'Online','Global / Virtual',['Open Source','DevTools'],'https://example.com','Land your first PRs into major OSS projects.'),
-    mk('AR/VR Reality Hack',1,24,3,'In-person','MIT, Cambridge, USA',['AR/VR','Gaming','AI/ML'],'https://mitrealityhack.com','XR-focused hackathon with headset hardware loans.'),
+    mk('picoCTF',8,22,2,'Online','Global / Virtual',['Cybersecurity','DevTools'],'https://picoctf.org/','Carnegie Mellon’s free, beginner-friendly annual capture-the-flag.'),
+    mk('MakeMIT',11,8,2,'In-person','Cambridge, USA',['Robotics','Hardware'],'https://makemit.net/','MIT’s 24-hour hardware hackathon with on-site fab-lab access.'),
+    mk('Junction',11,21,3,'In-person','Helsinki, Finland',['AI/ML','Web3','Hardware'],'https://www.hackjunction.com','Europe’s leading hackathon, 1,500 hackers.'),
+    mk('PennApps',9,27,2,'In-person','Philadelphia, USA',['Mobile','DevTools'],'https://pennapps.com/','The original college hackathon — beginner-accessible, ship in 36 hours.'),
+    mk('Hacktoberfest',10,18,1,'Online','Global / Virtual',['Open Source','DevTools'],'https://hacktoberfest.com/','DigitalOcean’s month-long October open-source contribution event.'),
+    mk('MIT Reality Hack',1,24,3,'In-person','MIT, Cambridge, USA',['AR/VR','Gaming','AI/ML'],'https://www.realityhackatmit.com','XR-focused hackathon with headset hardware loans.'),
   ];
 }
 
@@ -247,7 +257,7 @@ function save(d){data=d||data; localStorage.setItem(STORE,JSON.stringify(data))}
 let view='month';
 let cur=new Date(); cur.setDate(1);
 let activeTags=new Set();
-let q='', fmtF='', upOnly=false;
+let q='', fmtF='', upOnly=false, openOnly=false;
 
 /* ---- filtering ---- */
 function filtered(){
@@ -255,6 +265,7 @@ function filtered(){
   return data.filter(ev=>{
     if(fmtF && ev.fmt!==fmtF) return false;
     if(upOnly && ev.end < t) return false;
+    if(openOnly && !isOpenForReg(ev)) return false;
     if(activeTags.size && !ev.tags.some(x=>activeTags.has(x))) return false;
     if(q){
       const hay=(ev.name+' '+ev.loc+' '+ev.tags.join(' ')+' '+(ev.desc||'')).toLowerCase();
@@ -268,14 +279,14 @@ function filtered(){
 function renderStats(){
   const t=todayISO();
   const up=data.filter(e=>e.end>=t).length;
-  const online=data.filter(e=>e.fmt==='Online').length;
+  const openNow=data.filter(isOpenForReg).length;
   const next=[...data].filter(e=>e.start>=t).sort((a,b)=>a.start.localeCompare(b.start))[0];
   let days='—';
   if(next){const dd=Math.ceil((new Date(next.start)-new Date(t))/864e5); days=dd===0?'Today':dd+'d'}
   $('#stats').innerHTML=`
     <div><b>${data.length}</b> total events</div>
     <div><b>${up}</b> upcoming</div>
-    <div><b>${online}</b> online</div>
+    <div><b>${openNow}</b> 🟢 open to register</div>
     <div><b>${days}</b> to next ${next?'· '+next.name:''}</div>`;
 }
 
@@ -319,7 +330,8 @@ function renderMonth(){
     const shown=dayEvs.slice(0,3);
     shown.forEach(e=>{
       const x=document.createElement('div');
-      x.className='ev'; x.style.borderLeftColor=evColor(e); x.textContent=e.name;
+      x.className='ev'; x.style.borderLeftColor=evColor(e);
+      x.textContent=regStatus(e).dot+' '+e.name; x.title=e.name+' — '+regStatus(e).label;
       x.onclick=ev=>{ev.stopPropagation(); openDetail(e)};
       cell.appendChild(x);
     });
@@ -333,6 +345,23 @@ function renderMonth(){
 }
 
 function fmtDate(iso){const d=new Date(iso+'T00:00');return d.toLocaleDateString('default',{month:'short',day:'numeric',year:'numeric'})}
+function fmtShort(iso){const d=new Date(iso+'T00:00');return d.toLocaleDateString('default',{month:'short',day:'numeric'})}
+function daysBetween(a,b){return Math.ceil((new Date(a)-new Date(b))/864e5)}
+// Registration status for an event, derived from regOpen/regClose (or start as fallback).
+function regStatus(e){
+  const t=todayISO();
+  if(e.end < t) return {label:'Event ended', cls:'closed', dot:'⚪'};
+  if(e.regOpen && t < e.regOpen) return {label:'Opens '+fmtShort(e.regOpen), cls:'preopen', dot:'🔵'};
+  const rc = e.regClose || e.start;
+  if(t > rc){
+    // deadline passed but event not over → registration closed (may be in progress)
+    return {label: e.start<=t ? 'Registration closed · in progress' : 'Registration closed', cls:'closed', dot:'🔴'};
+  }
+  const days=daysBetween(rc,t);
+  if(days<=7) return {label: days<=0?'Closes today':`Closing soon · ${days}d left`, cls:'soon', dot:'🟠'};
+  return {label:`Open · until ${fmtShort(rc)}`, cls:'open', dot:'🟢'};
+}
+function isOpenForReg(e){const s=regStatus(e);return s.cls==='open'||s.cls==='soon'}
 function renderList(){
   const el=$('#listEl'); el.innerHTML='';
   const t=todayISO();
@@ -355,6 +384,7 @@ function renderList(){
         <div style="color:var(--muted);font-size:13px">${fmtDate(e.start)}${span} · ${esc(e.loc)}</div>
         ${e.desc?`<p>${esc(e.desc)}</p>`:''}
         <div class="meta">
+          ${(rs=>`<span class="reg ${rs.cls}">${rs.dot} ${rs.label}</span>`)(regStatus(e))}
           <span class="tag fmt" style="background:${evColor(e)}">${e.fmt}</span>
           ${e.tags.map(tg=>`<span class="tag">${tg}</span>`).join('')}
           ${e.src?`<span class="tag" style="border-color:var(--accent);color:var(--accent)">${e.src==='Discord'?'🎮':e.src==='WhatsApp'?'💬':'📥'} ${esc(e.src)}</span>`:''}
@@ -383,7 +413,9 @@ function openDetail(e){
     <button class="close" onclick="closeModal()">×</button>
     <h2>${esc(e.name)}</h2>
     <div style="color:var(--accent2);font-weight:700;font-size:13px">${status}</div>
+    ${(rs=>`<div style="margin-top:8px"><span class="reg ${rs.cls}">${rs.dot} ${rs.label}</span></div>`)(regStatus(e))}
     <div class="det-row"><span class="k">Dates</span><span>${fmtDate(e.start)}${e.start!==e.end?' – '+fmtDate(e.end):''}</span></div>
+    ${e.regClose?`<div class="det-row"><span class="k">Reg. deadline</span><span>${fmtDate(e.regClose)}</span></div>`:''}
     <div class="det-row"><span class="k">Format</span><span><span class="tag fmt" style="background:${evColor(e)}">${e.fmt}</span></span></div>
     <div class="det-row"><span class="k">Location</span><span>${esc(e.loc)}</span></div>
     <div class="det-row"><span class="k">Tech</span><span>${e.tags.map(tg=>`<span class="tag">${tg}</span>`).join(' ')}</span></div>
@@ -400,7 +432,7 @@ function openDetail(e){
 
 /* ---- add / edit form ---- */
 function openForm(ev){
-  const e=ev||{name:'',start:todayISO(),end:todayISO(),fmt:'Online',loc:'',tags:[],url:'',desc:''};
+  const e=ev||{name:'',start:todayISO(),end:todayISO(),fmt:'Online',loc:'',tags:[],url:'',desc:'',regClose:'',regOpen:''};
   $('#modal').innerHTML=`
     <button class="close" onclick="closeModal()">×</button>
     <h2>${ev?'Edit':'Add'} Hackathon</h2>
@@ -408,6 +440,10 @@ function openForm(ev){
     <div class="row2">
       <div class="field"><label>Start date</label><input id="f_start" type="date" value="${e.start}"></div>
       <div class="field"><label>End date</label><input id="f_end" type="date" value="${e.end}"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Registration opens (optional)</label><input id="f_regopen" type="date" value="${e.regOpen||''}"></div>
+      <div class="field"><label>Registration deadline (optional)</label><input id="f_regclose" type="date" value="${e.regClose||''}"></div>
     </div>
     <div class="row2">
       <div class="field"><label>Format</label><select id="f_fmt">
@@ -430,10 +466,12 @@ function saveForm(id){
   if(end<start) end=start;
   const obj={
     id:id||uid(), name, start, end,
+    regOpen:$('#f_regopen').value||'', regClose:$('#f_regclose').value||'',
     fmt:$('#f_fmt').value, loc:$('#f_loc').value.trim()||'TBD',
     tags:$('#f_tags').value.split(',').map(s=>s.trim()).filter(Boolean),
     url:$('#f_url').value.trim(), desc:$('#f_desc').value.trim()
   };
+  const prev=id&&data.find(e=>e.id===id); if(prev&&prev.src)obj.src=prev.src;
   if(id){data=data.map(e=>e.id===id?obj:e)} else {data.push(obj)}
   save(); closeModal(); render();
 }
@@ -562,11 +600,17 @@ function pickTitle(text){
   line=line.replace(/[#*_>•]+/g,' ').replace(/\s{2,}/g,' ').trim();
   return (line||'Imported event').slice(0,80);
 }
+function pickRegClose(text){
+  let m=text.match(/(?:register|registration|sign[\s-]?up|apply|applications?|rsvp|submission|submit)[^\n]{0,24}?(?:by|before|closes?|deadline|until|ends?|due)\b\s*:?\s*([^\n,.;!]{4,40})/i)
+       || text.match(/(?:deadline|closes?|cutoff)\s*:?\s*([^\n,.;!]{4,40})/i);
+  if(m){const d=parseDates(m[1]); if(d) return d.start;}
+  return '';
+}
 function buildEvent(text,dates,source){
   const url=(text.match(/https?:\/\/\S+/)||[''])[0].replace(/[).,]+$/,'');
   const fmt=pickFmt(text);
   return {id:uid(),name:pickTitle(text),start:dates.start,end:dates.end,fmt,
-    loc:pickLoc(text,fmt),tags:pickTags(text),url,
+    loc:pickLoc(text,fmt),tags:pickTags(text),url,regClose:pickRegClose(text),
     desc:text.replace(/\s+/g,' ').trim().slice(0,240),src:source||'Import'};
 }
 const isWAStart=l=>/^\s*\[?\d{1,2}[\/.]\d{1,2}[\/.]\d{2,4},?\s+\d{1,2}:\d{2}/.test(l);
@@ -703,6 +747,7 @@ $('#icsBtn').onclick=()=>downloadFile('hackcal-all.ics',icsForEvents(filtered())
 $('#search').oninput=e=>{q=e.target.value;render()};
 $('#fmtFilter').onchange=e=>{fmtF=e.target.value;render()};
 $('#upChk').onchange=e=>{upOnly=e.target.checked;render()};
+$('#openChk').onchange=e=>{openOnly=e.target.checked;render()};
 $('#ver').textContent='v2 · '+data.length+' events';
 
 applyTheme(localStorage.getItem('hackcal.theme') || (matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'));

@@ -66,15 +66,28 @@ python3 -m http.server 4318 --directory .
 # then visit http://localhost:4318
 ```
 
+## Registration status
+
+Every event shows a registration indicator derived from its (optional)
+registration deadline — 🟢 **Open**, 🟠 **Closing soon** (≤7 days left),
+🔴 **Registration closed**, 🔵 **Opens later**, or ⚪ **Event ended**. Seeded
+events default their deadline to a few days before the start date; the **Import**
+parser also detects phrases like "register by August 8". A **🟢 Open to
+register** filter shows only events you can still join. The status is computed
+from dates in the app — it is **not** a live check of each event's real
+registration page, so confirm on the official site.
+
 ## Data transparency
 
-The app ships with **16 illustrative seeded hackathons** (e.g. ETHGlobal, NASA
+The app ships with **16 real, well-known recurring hackathons** (ETHGlobal, NASA
 Space Apps Challenge, Hack the North, TreeHacks, MIT Reality Hack, Junction,
-MLH). These are well-known recurring events included as realistic examples and
-are **auto-dated forward** so they always appear upcoming — the specific dates
-are placeholders for demonstration, **not** confirmed official schedules. Always
-verify dates, formats, and locations on each event's official website before
-making plans. Add, edit, or delete any entry to make the calendar your own.
+Global Game Jam, picoCTF, Hacktoberfest, PennApps, MakeMIT, MIT Hacking Medicine
+GrandHack, ClimateHack.AI, AI Engineer World's Fair, Money20/20, MLH Global Hack
+Week). Each links to its **official, verified website**. However, the **dates are
+illustrative** — auto-forwarded so events always appear upcoming — and are
+**not** confirmed official schedules. Always verify the exact dates, format, and
+registration deadline on each event's official website before making plans. Add,
+edit, or delete any entry to make the calendar your own.
 
 ## Tech
 
