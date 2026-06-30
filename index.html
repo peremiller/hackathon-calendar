@@ -6,21 +6,30 @@
 <title>HackCal · Tech Hackathon Calendar</title>
 <style>
   :root{
-    --bg:#0b0f1a; --panel:#121829; --panel2:#1a2138; --line:#26304d;
+    --bg:#0b0f1a; --grad:#16203a; --panel:#121829; --panel2:#1a2138; --line:#26304d;
     --txt:#e8edf7; --muted:#94a3c4; --accent:#6c8cff; --accent2:#22d3ee;
     --good:#34d399; --warn:#fbbf24; --bad:#fb7185; --chip:#1f2945;
+    --headbg:rgba(11,15,26,.82);
     --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --bg:#eef2fb; --grad:#dde6fb; --panel:#ffffff; --panel2:#f3f6fd; --line:#d7deee;
+    --txt:#1b2238; --muted:#5a6585; --accent:#4f6bff; --accent2:#0891b2;
+    --good:#059669; --warn:#b45309; --bad:#e11d48; --chip:#eef2fb;
+    --headbg:rgba(255,255,255,.86);
+    --shadow:0 10px 28px rgba(40,55,90,.12);
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:radial-gradient(1200px 600px at 80% -10%,#16203a 0%,var(--bg) 55%);
+    background:radial-gradient(1200px 600px at 80% -10%,var(--grad) 0%,var(--bg) 55%);
     color:var(--txt); min-height:100vh; line-height:1.45;
+    transition:background .25s,color .25s;
   }
   header{
     position:sticky; top:0; z-index:20; backdrop-filter:blur(10px);
-    background:rgba(11,15,26,.82); border-bottom:1px solid var(--line);
+    background:var(--headbg); border-bottom:1px solid var(--line);
   }
   .bar{max-width:1180px; margin:0 auto; padding:14px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap}
   .brand{display:flex; align-items:center; gap:10px; font-weight:800; font-size:20px; letter-spacing:.3px}
@@ -134,8 +143,11 @@
       <button data-view="month" class="on">📅 Calendar</button>
       <button data-view="list">📋 List</button>
     </div>
+    <button class="btn" id="importBtn">📥 Import</button>
+    <button class="btn" id="syncBtn">🔄 Sync Discord</button>
     <button class="btn" id="icsBtn">⬇ Export .ics</button>
     <button class="btn primary" id="addBtn">＋ Add Hackathon</button>
+    <button class="btn" id="themeBtn" title="Toggle light / dark" aria-label="Toggle light or dark theme">🌙</button>
   </div>
 </header>
 
@@ -345,6 +357,7 @@ function renderList(){
         <div class="meta">
           <span class="tag fmt" style="background:${evColor(e)}">${e.fmt}</span>
           ${e.tags.map(tg=>`<span class="tag">${tg}</span>`).join('')}
+          ${e.src?`<span class="tag" style="border-color:var(--accent);color:var(--accent)">${e.src==='Discord'?'🎮':e.src==='WhatsApp'?'💬':'📥'} ${esc(e.src)}</span>`:''}
         </div>
       </div>
       <div class="countdown"><b>${e.end<t?'✓':dd<=0?'🔴':dd}</b>${cd}</div>`;
@@ -376,6 +389,7 @@ function openDetail(e){
     <div class="det-row"><span class="k">Tech</span><span>${e.tags.map(tg=>`<span class="tag">${tg}</span>`).join(' ')}</span></div>
     ${e.desc?`<div class="det-row"><span class="k">About</span><span>${esc(e.desc)}</span></div>`:''}
     ${e.url?`<div class="det-row"><span class="k">Link</span><a class="link" href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.url)} ↗</a></div>`:''}
+    ${e.src?`<div class="det-row"><span class="k">Source</span><span>Imported via ${esc(e.src)}</span></div>`:''}
     <div class="modal-actions">
       <button class="btn" onclick="downloadICS('${e.id}')">⬇ Add to calendar (.ics)</button>
       <button class="btn" onclick="editEvent('${e.id}')">✎ Edit</button>
@@ -456,6 +470,216 @@ function downloadFile(name,text){
 function downloadICS(id){const e=data.find(x=>x.id===id); downloadFile(slug(e.name)+'.ics',icsForEvents([e]))}
 function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
 
+/* ---- import: parse Discord / WhatsApp message text into events ---- */
+var parsedPreview=[];
+const MONTHS={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,sept:8,oct:9,nov:10,dec:11,
+  january:0,february:1,march:2,april:3,june:5,july:6,august:7,september:8,october:9,november:10,december:11};
+function inferYear(y,mo,d){
+  if(y) return y<100?y+2000:y;
+  const now=new Date(new Date().toDateString()); let yr=now.getFullYear();
+  if(new Date(yr,mo,d)<now) yr++; return yr;
+}
+const isoOf=(y,mo,d)=>`${y}-${pad(mo+1)}-${pad(d)}`;
+const ctxYear=t=>{const m=t.match(/\b(20\d{2})\b/);return m?+m[1]:null;};
+function parseDates(text){
+  let m;
+  const reMD=/\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t)?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:\s*(?:[-–—]|to)\s*(\d{1,2}))?(?:[,\s]+(\d{4}))?/i;
+  if(m=text.match(reMD)){
+    const mo=MONTHS[m[1].toLowerCase().replace('.','')], d1=+m[2], d2=m[3]?+m[3]:null;
+    const yr=inferYear(m[4]?+m[4]:ctxYear(text),mo,d1);
+    return {start:isoOf(yr,mo,d1),end:isoOf(yr,mo,d2||d1)};
+  }
+  const reDM=/\b(\d{1,2})\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t)?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?(?:\s+(\d{4}))?/i;
+  if(m=text.match(reDM)){
+    const mo=MONTHS[m[2].toLowerCase().replace('.','')], d=+m[1]; const yr=inferYear(m[3]?+m[3]:ctxYear(text),mo,d);
+    return {start:isoOf(yr,mo,d),end:isoOf(yr,mo,d)};
+  }
+  const reISO=/(\d{4})-(\d{2})-(\d{2})(?:\s*(?:[-–—]|to)\s*(\d{4})-(\d{2})-(\d{2}))?/;
+  if(m=text.match(reISO)){
+    const start=`${m[1]}-${m[2]}-${m[3]}`; return {start,end:m[4]?`${m[4]}-${m[5]}-${m[6]}`:start};
+  }
+  const reNum=/\b(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{2,4}))?\b/;
+  if(m=text.match(reNum)){
+    let a=+m[1],b=+m[2],y=m[3]?+m[3]:null,mo,d;
+    if(a>12){d=a;mo=b-1;} else if(b>12){mo=a-1;d=b;} else {mo=a-1;d=b;}
+    if(mo<0||mo>11||d<1||d>31) return null;
+    return {start:isoOf(inferYear(y,mo,d),mo,d),end:isoOf(inferYear(y,mo,d),mo,d)};
+  }
+  return null;
+}
+function stripChatMeta(line){
+  let s=line;
+  // WhatsApp prefix: [12/03/2026, 19:00] Name:  /  12/03/2026, 7:00 PM - Name:
+  const wa=/^\s*\[?\d{1,2}[\/.]\d{1,2}[\/.]\d{2,4},?\s+\d{1,2}:\d{2}(?::\d{2})?\s*(?:[AaPp][Mm])?\]?\s*[-–]?\s*(?:[^:\n]{1,40}:\s+)?/;
+  if(wa.test(s)) s=s.replace(wa,'');
+  // Discord "Name Today at 7:00 PM" header noise
+  s=s.replace(/\b(Today|Yesterday)\s+at\s+\d{1,2}:\d{2}\s*(?:[AaPp][Mm])?/gi,'');
+  return s.trim();
+}
+function pickFmt(t){
+  if(/\bhybrid\b/i.test(t)) return 'Hybrid';
+  if(/\b(online|virtual|remote)\b/i.test(t)) return 'Online';
+  if(/\b(in[- ]?person|on[- ]?site|onsite|venue)\b/i.test(t)) return 'In-person';
+  return 'Online';
+}
+function pickLoc(t,fmt){
+  let m=t.match(/(?:venue|location|where|place)\s*[:\-]\s*([^\n]+)/i);
+  if(m) return m[1].trim().slice(0,60);
+  m=t.match(/\bat\s+([A-Z][A-Za-z0-9 '&-]{2,40})/);
+  if(m) return m[1].trim().replace(/[.,]+$/,'');
+  if(/\b(online|virtual|remote|discord|zoom|gather)\b/i.test(t)) return 'Online / Virtual';
+  return fmt==='Online'?'Online / Virtual':'TBD';
+}
+const TAGMAP=[
+  [/\b(ai|machine learning|ml|llm|genai|deep learning|agents?)\b/i,'AI/ML'],
+  [/\b(web3|blockchain|crypto|ethereum|solana|defi|nft)\b/i,'Web3'],
+  [/\b(fintech|payments?|banking)\b/i,'FinTech'],
+  [/\b(health|medical|biotech|medtech)\b/i,'HealthTech'],
+  [/\b(climate|sustainab|carbon|cleantech|energy)\b/i,'Climate'],
+  [/\b(game|gaming|gamedev|game ?jam)\b/i,'Gaming'],
+  [/\b(ar|vr|xr|augmented|virtual reality|metaverse)\b/i,'AR/VR'],
+  [/\b(robot|robotics)\b/i,'Robotics'],
+  [/\b(security|cyber|infosec|ctf)\b/i,'Cybersecurity'],
+  [/\b(open ?source|oss)\b/i,'Open Source'],
+  [/\b(mobile|ios|android|flutter|react native)\b/i,'Mobile'],
+  [/\b(data|datathon|analytics)\b/i,'Data'],
+  [/\b(devtools?|developer tools?|api|sdk)\b/i,'DevTools'],
+  [/\b(hardware|iot|embedded|electronics)\b/i,'Hardware'],
+];
+function pickTags(t){const out=[];TAGMAP.forEach(([re,tag])=>{if(re.test(t)&&!out.includes(tag))out.push(tag)});return out.slice(0,5)}
+function pickTitle(text){
+  let line=(text.split('\n').find(l=>/[a-z]/i.test(l.replace(/https?:\/\/\S+/g,'')))||text.split('\n')[0]||'')
+    .replace(/https?:\/\/\S+/g,'').trim();
+  // Cut the name at the earliest of: a date, a sentence end, or a connector phrase.
+  const cuts=[];
+  const dm=line.match(/\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s*\d{1,2}\b|\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}[\/.]\d{1,2}(?:[\/.]\d{2,4})?\b/i);
+  if(dm) cuts.push(dm.index);
+  [/\bis\s+(?:online|virtual|in[- ]?person|hybrid|happening|on)\b/i,/\bhappening\b/i,/\bon\b/i,/[.!?]/,/\s[—–-]\s/].forEach(re=>{const mm=line.match(re); if(mm)cuts.push(mm.index)});
+  const cut=Math.min(...cuts.filter(i=>i>=3));
+  let title=(isFinite(cut)?line.slice(0,cut):line)
+    .replace(/[#*_>•]+/g,' ').replace(/\s{2,}/g,' ').replace(/^[\s\-–—:,]+|[\s\-–—:,]+$/g,'').trim();
+  if(title.length>=3) return title.slice(0,80);
+  line=line.replace(/[#*_>•]+/g,' ').replace(/\s{2,}/g,' ').trim();
+  return (line||'Imported event').slice(0,80);
+}
+function buildEvent(text,dates,source){
+  const url=(text.match(/https?:\/\/\S+/)||[''])[0].replace(/[).,]+$/,'');
+  const fmt=pickFmt(text);
+  return {id:uid(),name:pickTitle(text),start:dates.start,end:dates.end,fmt,
+    loc:pickLoc(text,fmt),tags:pickTags(text),url,
+    desc:text.replace(/\s+/g,' ').trim().slice(0,240),src:source||'Import'};
+}
+const isWAStart=l=>/^\s*\[?\d{1,2}[\/.]\d{1,2}[\/.]\d{2,4},?\s+\d{1,2}:\d{2}/.test(l);
+const isDiscordHeader=l=>/(Today|Yesterday)\s+at\s+\d{1,2}:\d{2}/i.test(l);
+// Reconstruct individual messages from pasted chat text, so each event is its
+// own candidate (WhatsApp = one message per line; Discord = name/time header
+// line followed by the message body; plain paste = blank-line separated blocks).
+function segmentMessages(raw){
+  const lines=(raw||'').split(/\r?\n/); const msgs=[]; let cur=null;
+  for(const ln of lines){
+    if(isWAStart(ln)){ const body=stripChatMeta(ln); cur={l:[]}; msgs.push(cur); if(body)cur.l.push(body); }
+    else if(isDiscordHeader(ln)){ cur={l:[]}; msgs.push(cur); }   // drop the "Name Today at…" header
+    else if(!ln.trim()){ cur=null; }                              // blank line = boundary
+    else { const body=stripChatMeta(ln); if(!body)continue; if(!cur){cur={l:[]};msgs.push(cur);} cur.l.push(body); }
+  }
+  return msgs.map(m=>m.l.join('\n').trim()).filter(Boolean);
+}
+function parseEvents(raw,source){
+  const events=[];
+  for(const text of segmentMessages(raw)){
+    const dates=parseDates(text); if(!dates) continue;
+    events.push(buildEvent(text,dates,source));
+  }
+  return events;
+}
+function evKey(e){return (e.name||'').toLowerCase().replace(/[^a-z0-9]/g,'')+'|'+e.start}
+function mergeEvents(newEvs){
+  const seen=new Set(data.map(evKey)); let added=0;
+  newEvs.forEach(e=>{ const k=evKey(e); if(!seen.has(k)){data.push(e);seen.add(k);added++;} });
+  if(added) save();
+  return added;
+}
+function toast(msg){
+  const t=document.createElement('div'); t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:12px 20px;border-radius:12px;font-weight:600;box-shadow:var(--shadow);z-index:100;max-width:90vw;text-align:center';
+  document.body.appendChild(t); setTimeout(()=>t.remove(),3400);
+}
+function openImport(){
+  $('#modal').innerHTML=`
+    <button class="close" onclick="closeModal()">×</button>
+    <h2>Import events</h2>
+    <p style="color:var(--muted);font-size:13px;margin:4px 0 0">Paste messages copied from your <b>Discord</b> channel or <b>WhatsApp</b> group. HackCal detects the date, title, format, location, tech tags and link — review before importing.</p>
+    <div class="field"><label>Source</label>
+      <select id="imp_src"><option value="Discord">Discord</option><option value="WhatsApp">WhatsApp</option><option value="Import">Other / mixed</option></select>
+    </div>
+    <div class="field"><label>Pasted text</label>
+      <textarea id="imp_text" rows="7" placeholder="ETHGlobal Hackathon — March 14-16, 2026 at San Francisco.&#10;AI & web3 tracks, in-person. Register https://ethglobal.com"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="runParse()">Parse →</button>
+    </div>
+    <div id="imp_preview"></div>`;
+  showModal();
+}
+function runParse(){
+  const src=$('#imp_src').value;
+  parsedPreview=parseEvents($('#imp_text').value,src);
+  const box=$('#imp_preview');
+  if(!parsedPreview.length){
+    box.innerHTML='<p style="color:var(--bad);margin-top:14px;font-size:13.5px">No events with a recognizable date found. Make sure each event includes a date like “March 14”, “14 March 2026” or “2026-03-14”.</p>';
+    return;
+  }
+  box.innerHTML=`<div style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
+    <b>${parsedPreview.length} event${parsedPreview.length>1?'s':''} detected</b>
+    <div id="imp_list" style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div>
+    <div class="modal-actions"><button class="btn primary" onclick="confirmImport()">＋ Import selected</button></div></div>`;
+  const list=$('#imp_list');
+  parsedPreview.forEach((e,i)=>{
+    const row=document.createElement('label');
+    row.style.cssText='display:flex;gap:10px;align-items:flex-start;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer';
+    row.innerHTML=`<input type="checkbox" data-i="${i}" checked style="margin-top:3px;accent-color:var(--accent)">
+      <div style="flex:1">
+        <div style="font-weight:700">${esc(e.name)}</div>
+        <div style="color:var(--muted);font-size:12.5px">${fmtDate(e.start)}${e.start!==e.end?' – '+fmtDate(e.end):''} · ${e.fmt} · ${esc(e.loc)}</div>
+        ${e.tags.length?`<div class="meta">${e.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>`:''}
+      </div>`;
+    list.appendChild(row);
+  });
+}
+function confirmImport(){
+  const checked=[...document.querySelectorAll('#imp_list input:checked')].map(c=>parsedPreview[+c.dataset.i]);
+  if(!checked.length){toast('Nothing selected');return}
+  const added=mergeEvents(checked);
+  const dupes=checked.length-added;
+  closeModal(); render();
+  toast(`Imported ${added} event${added===1?'':'s'}`+(dupes>0?` · ${dupes} duplicate${dupes===1?'':'s'} skipped`:''));
+}
+
+/* ---- Discord auto-sync via serverless /api/discord-events ---- */
+async function syncDiscord(){
+  const btn=$('#syncBtn'), orig=btn.textContent; btn.textContent='⏳ Syncing…'; btn.disabled=true;
+  try{
+    const r=await fetch('/api/discord-events');
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
+    const text=(j.messages||[]).join('\n\n');
+    const evs=parseEvents(text,'Discord');
+    const added=mergeEvents(evs);
+    render();
+    toast(`Discord: scanned ${j.messages?j.messages.length:0} messages · added ${added} event${added===1?'':'s'}`);
+  }catch(err){
+    toast('Discord sync unavailable: '+err.message);
+  }finally{ btn.textContent=orig; btn.disabled=false; }
+}
+
+/* ---- theme ---- */
+function applyTheme(th){
+  document.documentElement.setAttribute('data-theme',th);
+  const b=$('#themeBtn'); if(b) b.textContent= th==='light'?'☀️':'🌙';
+  localStorage.setItem('hackcal.theme',th);
+}
+
 /* ---- modal helpers ---- */
 function showModal(){$('#modalBg').classList.add('show')}
 function closeModal(){$('#modalBg').classList.remove('show')}
@@ -472,12 +696,16 @@ $('#prevM').onclick=()=>{cur.setMonth(cur.getMonth()-1);renderMonth()};
 $('#nextM').onclick=()=>{cur.setMonth(cur.getMonth()+1);renderMonth()};
 $('#todayBtn').onclick=()=>{cur=new Date();cur.setDate(1);renderMonth()};
 $('#addBtn').onclick=()=>openForm(null);
+$('#importBtn').onclick=openImport;
+$('#syncBtn').onclick=syncDiscord;
+$('#themeBtn').onclick=()=>applyTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');
 $('#icsBtn').onclick=()=>downloadFile('hackcal-all.ics',icsForEvents(filtered()));
 $('#search').oninput=e=>{q=e.target.value;render()};
 $('#fmtFilter').onchange=e=>{fmtF=e.target.value;render()};
 $('#upChk').onchange=e=>{upOnly=e.target.checked;render()};
-$('#ver').textContent='v1 · '+data.length+' events seeded';
+$('#ver').textContent='v2 · '+data.length+' events';
 
+applyTheme(localStorage.getItem('hackcal.theme') || (matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'));
 render();
 </script>
 </body>
