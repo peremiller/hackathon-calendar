@@ -32,6 +32,15 @@ runs entirely in your browser and saves everything to `localStorage`.
 - **Discord auto-sync (optional)** — the **🔄 Sync Discord** button pulls recent
   messages from a Discord channel via a tiny Vercel serverless function and
   parses them into events. See setup below.
+- **Luma & calendar (.ics) import** — the **🔗 Luma** button (and the Import
+  dialog's "Luma / calendar feed" source) pulls events from a
+  [Luma](https://lu.ma) subscription feed or any iCalendar (`.ics`) URL —
+  Google Calendar, Meetup, Eventbrite, etc. A serverless proxy fetches the feed
+  (browsers block cross-origin `.ics` fetches; it also resolves `webcal://` and
+  lu.ma page links), and the events are parsed, de-duplicated, and badged 🔗. You
+  can also paste raw `.ics` text directly. Your feed URL is remembered for
+  one-click refresh. **In Luma:** open a calendar → **Subscribe** (or Settings →
+  your personal feed) → copy the iCal / webcal link.
 - **Stats bar** — total events, upcoming count, online count, and days-to-next.
 - **Private & offline** — all calendar data lives in your browser's
   `localStorage`; nothing is sent anywhere (the optional Discord sync only reads

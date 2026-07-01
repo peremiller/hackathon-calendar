@@ -149,6 +149,7 @@
       <button data-view="list">📋 List</button>
     </div>
     <button class="btn" id="importBtn">📥 Import</button>
+    <button class="btn" id="lumaBtn">🔗 Luma</button>
     <button class="btn" id="syncBtn">🔄 Sync Discord</button>
     <button class="btn" id="icsBtn">⬇ Export .ics</button>
     <button class="btn primary" id="addBtn">＋ Add Hackathon</button>
@@ -420,7 +421,7 @@ function renderList(){
           ${eligBadge(e)}
           <span class="tag fmt" style="background:${evColor(e)}">${e.fmt}</span>
           ${e.tags.map(tg=>`<span class="tag">${tg}</span>`).join('')}
-          ${e.src?`<span class="tag" style="border-color:var(--accent);color:var(--accent)">${e.src==='Discord'?'🎮':e.src==='WhatsApp'?'💬':'📥'} ${esc(e.src)}</span>`:''}
+          ${e.src?`<span class="tag" style="border-color:var(--accent);color:var(--accent)">${e.src==='Discord'?'🎮':e.src==='WhatsApp'?'💬':e.src==='Luma'?'🔗':'📥'} ${esc(e.src)}</span>`:''}
         </div>
       </div>
       <div class="countdown"><b>${e.end<t?'✓':dd<=0?'🔴':dd}</b>${cd}</div>`;
@@ -679,6 +680,47 @@ function parseEvents(raw,source){
   }
   return events;
 }
+/* ---- iCalendar (.ics) parsing — for Luma, Google Calendar, Meetup, Eventbrite… ---- */
+const icsUnesc=s=>String(s||'').replace(/\\n/gi,' ').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\').trim();
+const icsToISO=v=>{const m=(v||'').match(/(\d{4})(\d{2})(\d{2})/);return m?`${m[1]}-${m[2]}-${m[3]}`:null;};
+function isICS(t){return /BEGIN:VCALENDAR/i.test(t||'')}
+function parseICS(raw,source){
+  const unfolded=String(raw||'').replace(/\r\n/g,'\n').replace(/\n[ \t]/g,''); // RFC5545 line unfolding
+  const blocks=unfolded.split(/BEGIN:VEVENT/i).slice(1).map(b=>b.split(/END:VEVENT/i)[0]);
+  const events=[];
+  for(const b of blocks){
+    const get=name=>{const m=b.match(new RegExp('(?:^|\\n)'+name+'(;[^:\\n]*)?:(.*)','i'));return m?m[2].trim():'';};
+    const summary=icsUnesc(get('SUMMARY')); if(!summary) continue;
+    const dtStartRaw=get('DTSTART'), dtEndRaw=get('DTEND');
+    const start=icsToISO(dtStartRaw); if(!start) continue;
+    let end=icsToISO(dtEndRaw)||start;
+    const startLine=(b.match(/(?:^|\n)DTSTART[^:\n]*/i)||[''])[0];
+    const dateOnly=/VALUE=DATE\b/i.test(startLine)||/^\d{8}$/.test(dtStartRaw);
+    if(dateOnly && end>start){const d=new Date(end);d.setDate(d.getDate()-1);end=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;} // all-day DTEND is exclusive
+    const loc=icsUnesc(get('LOCATION'));
+    const desc=icsUnesc(get('DESCRIPTION'));
+    const url=(get('URL')||(desc.match(/https?:\/\/\S+/)||[''])[0]||'').replace(/[).,]+$/,'');
+    const hay=summary+' '+desc+' '+loc;
+    const physicalLoc=loc && !/online|virtual|remote|zoom|meet\.|google meet|gather|hopin|https?:/i.test(loc);
+    let fmt;
+    if(/\bhybrid\b/i.test(hay)) fmt='Hybrid';
+    else if(/\b(online|virtual|remote)\b/i.test(hay)) fmt='Online';
+    else if(physicalLoc) fmt='In-person';   // a real venue address in the .ics
+    else fmt='Online';
+    events.push({id:uid(),name:summary.slice(0,90),start,end,fmt,
+      loc:loc?loc.slice(0,60):(fmt==='Online'?'Online / Virtual':'TBD'),
+      tags:pickTags(hay),url,regClose:pickRegClose(desc)||'',
+      eligibility:pickElig(hay),dateConf:'confirmed',
+      desc:(desc||summary).replace(/\s+/g,' ').trim().slice(0,240),src:source||'Luma'});
+  }
+  return events;
+}
+async function fetchIcs(url){
+  const r=await fetch('/api/ics-proxy?url='+encodeURIComponent(url));
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
+  return j.ics;
+}
 function evKey(e){return (e.name||'').toLowerCase().replace(/[^a-z0-9]/g,'')+'|'+e.start}
 function mergeEvents(newEvs){
   const seen=new Set(data.map(evKey)); let added=0;
@@ -692,15 +734,27 @@ function toast(msg){
   document.body.appendChild(t); setTimeout(()=>t.remove(),3400);
 }
 function openImport(){
+  const savedIcs=localStorage.getItem('hackcal.icsurl')||'';
   $('#modal').innerHTML=`
     <button class="close" onclick="closeModal()">×</button>
     <h2>Import events</h2>
-    <p style="color:var(--muted);font-size:13px;margin:4px 0 0">Paste messages copied from your <b>Discord</b> channel or <b>WhatsApp</b> group. HackCal detects the date, title, format, location, tech tags and link — review before importing.</p>
+    <p style="color:var(--muted);font-size:13px;margin:4px 0 0">Pull events from a <b>Luma</b> / calendar feed, or paste messages from <b>Discord</b> / <b>WhatsApp</b>. HackCal detects date, title, format, location, tech tags &amp; link — review before importing.</p>
     <div class="field"><label>Source</label>
-      <select id="imp_src"><option value="Discord">Discord</option><option value="WhatsApp">WhatsApp</option><option value="Import">Other / mixed</option></select>
+      <select id="imp_src" onchange="impSrcChange()">
+        <option value="Luma">Luma / calendar feed (.ics)</option>
+        <option value="Discord">Discord</option><option value="WhatsApp">WhatsApp</option><option value="Import">Other / mixed</option>
+      </select>
     </div>
-    <div class="field"><label>Pasted text</label>
-      <textarea id="imp_text" rows="7" placeholder="ETHGlobal Hackathon — March 14-16, 2026 at San Francisco.&#10;AI & web3 tracks, in-person. Register https://ethglobal.com"></textarea>
+    <div class="field" id="imp_urlrow">
+      <label>Luma subscription or .ics feed URL</label>
+      <div style="display:flex;gap:8px">
+        <input id="imp_url" style="flex:1" value="${esc(savedIcs)}" placeholder="https://api.lu.ma/ics/get?entity=calendar&id=… or any webcal:// / .ics link">
+        <button class="btn" id="imp_fetch" onclick="importFetch()">⤵ Fetch feed</button>
+      </div>
+      <div style="color:var(--muted);font-size:12px;margin-top:4px">In Luma: open a calendar → <b>Subscribe</b> (or Settings → your personal feed) → copy the iCal / webcal link and paste it here.</div>
+    </div>
+    <div class="field"><label id="imp_textlabel">Pasted text or raw .ics</label>
+      <textarea id="imp_text" rows="7" placeholder="Paste an .ics feed, a Luma event, or chat messages…&#10;ETHGlobal Hackathon — March 14-16, 2026 at San Francisco. Register https://ethglobal.com"></textarea>
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">Cancel</button>
@@ -709,9 +763,27 @@ function openImport(){
     <div id="imp_preview"></div>`;
   showModal();
 }
+function impSrcChange(){
+  const isFeed=$('#imp_src').value==='Luma';
+  $('#imp_urlrow').style.display=isFeed?'':'none';
+}
+async function importFetch(){
+  const url=$('#imp_url').value.trim(); if(!url){toast('Enter a Luma / .ics URL first');return;}
+  const btn=$('#imp_fetch'), o=btn.textContent; btn.textContent='⏳ Fetching…'; btn.disabled=true;
+  try{
+    const ics=await fetchIcs(url);
+    localStorage.setItem('hackcal.icsurl',url);
+    $('#imp_text').value=ics;
+    runParse();
+  }catch(e){
+    $('#imp_preview').innerHTML='<p style="color:var(--bad);margin-top:14px;font-size:13.5px">Could not fetch feed: '+esc(e.message)+'</p>';
+  }finally{ btn.textContent=o; btn.disabled=false; }
+}
 function runParse(){
   const src=$('#imp_src').value;
-  parsedPreview=parseEvents($('#imp_text').value,src);
+  const txt=$('#imp_text').value;
+  parsedPreview = isICS(txt) ? parseICS(txt, src==='Discord'||src==='WhatsApp'?'Import':src)
+                             : parseEvents(txt, src==='Luma'?'Import':src);
   const box=$('#imp_preview');
   if(!parsedPreview.length){
     box.innerHTML='<p style="color:var(--bad);margin-top:14px;font-size:13.5px">No events with a recognizable date found. Make sure each event includes a date like “March 14”, “14 March 2026” or “2026-03-14”.</p>';
@@ -760,6 +832,23 @@ async function syncDiscord(){
   }finally{ btn.textContent=orig; btn.disabled=false; }
 }
 
+/* ---- Luma / .ics feed sync (remembers your feed URL for one-click refresh) ---- */
+async function syncLuma(){
+  const saved=localStorage.getItem('hackcal.icsurl');
+  if(!saved){ openImport(); $('#imp_src').value='Luma'; impSrcChange(); $('#imp_url').focus();
+    toast('Paste your Luma subscription / .ics link, then Fetch'); return; }
+  const btn=$('#lumaBtn'), orig=btn.textContent; btn.textContent='⏳ Luma…'; btn.disabled=true;
+  try{
+    const ics=await fetchIcs(saved);
+    const evs=parseICS(ics,'Luma');
+    const added=mergeEvents(evs);
+    render();
+    toast(`Luma: scanned ${evs.length} event${evs.length===1?'':'s'} · added ${added}`);
+  }catch(err){
+    toast('Luma sync failed: '+err.message+' — reset the link via Import');
+  }finally{ btn.textContent=orig; btn.disabled=false; }
+}
+
 /* ---- theme ---- */
 function applyTheme(th){
   document.documentElement.setAttribute('data-theme',th);
@@ -784,6 +873,7 @@ $('#nextM').onclick=()=>{cur.setMonth(cur.getMonth()+1);renderMonth()};
 $('#todayBtn').onclick=()=>{cur=new Date();cur.setDate(1);renderMonth()};
 $('#addBtn').onclick=()=>openForm(null);
 $('#importBtn').onclick=openImport;
+$('#lumaBtn').onclick=syncLuma;
 $('#syncBtn').onclick=syncDiscord;
 $('#themeBtn').onclick=()=>applyTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');
 $('#icsBtn').onclick=()=>downloadFile('hackcal-all.ics',icsForEvents(filtered()));
