@@ -268,7 +268,7 @@ function load(){
   if(!Array.isArray(v)||!v.length){ const s=seed(); localStorage.setItem(VERKEY,SEED_VER); save(s); return s; }
   const ver=+(localStorage.getItem(VERKEY)||0);
   if(ver<SEED_VER){
-    // Refresh built-in events (fixes stale example.com URLs / dates) while keeping
+    // Refresh built-in events (fixes stale placeholder URLs / dates) while keeping
     // anything the user added or imported (has src, or a non-seed name).
     const userRows=v.filter(e=>!isSeedRow(e));
     const merged=seed().concat(userRows);
