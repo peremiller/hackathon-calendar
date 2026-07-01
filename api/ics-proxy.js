@@ -40,21 +40,40 @@ export default async function handler(req, res) {
       res.status(200).json({ ics: first.text });
       return;
     }
-    // Not an .ics feed — maybe a lu.ma / event HTML page. Look for a calendar link.
-    const m = first.text.match(/https?:\/\/api\.lu\.ma\/ics\/get[^"'\s\\]+/i)
-           || first.text.match(/webcal:\/\/[^"'\s\\]+/i)
-           || first.text.match(/https?:\/\/[^"'\s\\]*\.ics\b[^"'\s\\]*/i);
-    if (m) {
-      const icsUrl = m[0].replace(/^webcal:\/\//i, 'https://').replace(/&amp;/g, '&');
-      const second = await grab(icsUrl);
-      if (looksLikeICS(second.text)) {
-        res.setHeader('Cache-Control', 'no-store');
-        res.status(200).json({ ics: second.text, resolvedFrom: icsUrl });
-        return;
-      }
+    // Not an .ics feed — probably a lu.ma (or other) event/calendar HTML page.
+    // Build a list of candidate .ics URLs and try each until one is a real feed.
+    const html = first.text;
+    const candidates = [];
+    // 1. Any api.lu.ma/ics/get link embedded in the page.
+    let m; const re = /https?:\/\/api\.lu\.ma\/ics\/get[^"'\s\\]+/gi;
+    while ((m = re.exec(html))) candidates.push(m[0]);
+    // 2. Construct from the event/calendar API id that lu.ma server-renders into the page.
+    const evId = html.match(/"api_id"\s*:\s*"(evt-[A-Za-z0-9]+)"/);
+    if (evId) candidates.push('https://api.lu.ma/ics/get?entity=event&id=' + evId[1]);
+    const calId = html.match(/"api_id"\s*:\s*"(cal-[A-Za-z0-9]+)"/);
+    if (calId) candidates.push('https://api.lu.ma/ics/get?entity=calendar&id=' + calId[1]);
+    // 3. lu.ma/<slug> → try the conventional per-event .ics path.
+    const slug = url.match(/^https?:\/\/lu\.ma\/([A-Za-z0-9_-]+)/i);
+    if (slug) candidates.push('https://lu.ma/' + slug[1] + '.ics');
+    // 4. Any webcal:// or *.ics link found in the page.
+    const wc = html.match(/webcal:\/\/[^"'\s\\]+/i); if (wc) candidates.push(wc[0]);
+    const ics = html.match(/https?:\/\/[^"'\s\\]*\.ics\b[^"'\s\\]*/i); if (ics) candidates.push(ics[0]);
+
+    const seen = new Set();
+    for (const c of candidates) {
+      const cand = c.replace(/^webcal:\/\//i, 'https://').replace(/&amp;/g, '&');
+      if (seen.has(cand)) continue; seen.add(cand);
+      try {
+        const r = await grab(cand);
+        if (looksLikeICS(r.text)) {
+          res.setHeader('Cache-Control', 'no-store');
+          res.status(200).json({ ics: r.text, resolvedFrom: cand });
+          return;
+        }
+      } catch (_) { /* try the next candidate */ }
     }
     res.status(422).json({
-      error: 'No calendar (.ics) feed found at that URL. In Luma, open the calendar → Subscribe → copy the iCal / webcal link and paste that.'
+      error: 'Could not find a calendar (.ics) feed for that link. For a Luma event, the page link usually works; otherwise open the calendar → Subscribe → copy the iCal / webcal link and paste that.'
     });
   } catch (e) {
     res.status(502).json({ error: 'Could not fetch the feed: ' + String((e && e.message) || e) });

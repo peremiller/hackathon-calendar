@@ -701,14 +701,18 @@ function parseICS(raw,source){
     const desc=icsUnesc(get('DESCRIPTION'));
     const url=(get('URL')||(desc.match(/https?:\/\/\S+/)||[''])[0]||'').replace(/[).,]+$/,'');
     const hay=summary+' '+desc+' '+loc;
-    const physicalLoc=loc && !/online|virtual|remote|zoom|meet\.|google meet|gather|hopin|https?:/i.test(loc);
+    const locIsUrl=/^https?:\/\//i.test(loc);
+    const physicalLoc=loc && !locIsUrl && !/online|virtual|remote|zoom|meet\.|google meet|gather|hopin/i.test(loc);
+    const hasGeo=/(?:^|\n)GEO:/i.test(b);   // physical coordinates ⇒ in-person
     let fmt;
     if(/\bhybrid\b/i.test(hay)) fmt='Hybrid';
     else if(/\b(online|virtual|remote)\b/i.test(hay)) fmt='Online';
-    else if(physicalLoc) fmt='In-person';   // a real venue address in the .ics
+    else if(physicalLoc || hasGeo) fmt='In-person';   // real venue in the .ics
     else fmt='Online';
-    events.push({id:uid(),name:summary.slice(0,90),start,end,fmt,
-      loc:loc?loc.slice(0,60):(fmt==='Online'?'Online / Virtual':'TBD'),
+    const displayLoc = physicalLoc ? loc.slice(0,60)
+      : (locIsUrl || hasGeo) ? 'See event page'
+      : (fmt==='Online' ? 'Online / Virtual' : 'TBD');
+    events.push({id:uid(),name:summary.slice(0,90),start,end,fmt,loc:displayLoc,
       tags:pickTags(hay),url,regClose:pickRegClose(desc)||'',
       eligibility:pickElig(hay),dateConf:'confirmed',
       desc:(desc||summary).replace(/\s+/g,' ').trim().slice(0,240),src:source||'Luma'});
@@ -748,10 +752,10 @@ function openImport(){
     <div class="field" id="imp_urlrow">
       <label>Luma subscription or .ics feed URL</label>
       <div style="display:flex;gap:8px">
-        <input id="imp_url" style="flex:1" value="${esc(savedIcs)}" placeholder="https://api.lu.ma/ics/get?entity=calendar&id=… or any webcal:// / .ics link">
+        <input id="imp_url" style="flex:1" value="${esc(savedIcs)}" placeholder="Paste a lu.ma/event link, a Subscribe iCal link, or any .ics / webcal:// URL">
         <button class="btn" id="imp_fetch" onclick="importFetch()">⤵ Fetch feed</button>
       </div>
-      <div style="color:var(--muted);font-size:12px;margin-top:4px">In Luma: open a calendar → <b>Subscribe</b> (or Settings → your personal feed) → copy the iCal / webcal link and paste it here.</div>
+      <div style="color:var(--muted);font-size:12px;margin-top:4px">Paste a single <b>lu.ma event page link</b> (e.g. <code>lu.ma/abc123</code>) and HackCal finds its .ics automatically — or for a whole calendar, open it → <b>Subscribe</b> → copy the iCal / webcal link.</div>
     </div>
     <div class="field"><label id="imp_textlabel">Pasted text or raw .ics</label>
       <textarea id="imp_text" rows="7" placeholder="Paste an .ics feed, a Luma event, or chat messages…&#10;ETHGlobal Hackathon — March 14-16, 2026 at San Francisco. Register https://ethglobal.com"></textarea>
