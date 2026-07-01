@@ -226,7 +226,7 @@ function seed(){
     const s=`${yr}-${pad(m)}-${pad(d)}`;
     const e=new Date(yr,m-1,d+len-1);
     const rc=new Date(yr,m-1,d-4);                // registration closes ~4 days before start
-    return {id:uid(),name,start:s,end:iso(e),regClose:iso(rc),fmt,loc,tags,url,desc,dateConf:conf||'typical',eligibility:elig||'Everyone'};
+    return {id:uid(),name,start:s,end:iso(e),regClose:iso(rc),fmt,loc,tags,url,desc,dateConf:conf||'typical',eligibility:elig||'Everyone',seed:true};
   };
   return [
     mk('MLH Global Hack Week',7,13,7,'Online','Global / Virtual',['AI/ML','Open Source','DevTools'],'https://ghw.mlh.com/','Major League Hacking’s beginner-friendly week-long online event (successor to Local Hack Day).','typical','Everyone'),
@@ -248,11 +248,33 @@ function seed(){
   ];
 }
 
+const SEED_VER=2;                 // bump when the built-in event list changes
+const VERKEY=STORE+'.seedver';
+// Names of every hackathon that has ever shipped as a built-in seed (old + current),
+// so a pre-versioning install can be migrated even though its rows lack seed:true.
+const KNOWN_SEED_NAMES=new Set([
+  'MLH Local Hack Day','ETHGlobal Hackathon','AI Engineer Hack','NASA Space Apps Challenge',
+  'Hack the North','Climate Hack','FinTech DevCon Hack','HealthHacks','GameDev Jam','TreeHacks',
+  'Cybersec CTF & Build','Robotics Build Weekend','Junction','Mobile App Sprint','Open Source Day',
+  'AR/VR Reality Hack','MLH Global Hack Week','AI Engineer World’s Fair','ClimateHack.AI',
+  'Money20/20 Hackathon','MIT Hacking Medicine GrandHack','Global Game Jam','picoCTF','MakeMIT',
+  'PennApps','Hacktoberfest','MIT Reality Hack'
+]);
+const isSeedRow=e=>e.seed===true || (!e.src && KNOWN_SEED_NAMES.has(e.name));
 let data;
 data = load();
 function load(){
-  try{const v=JSON.parse(localStorage.getItem(STORE)); if(v&&v.length) return v;}catch(e){}
-  const s=seed(); save(s); return s;
+  let v=null; try{v=JSON.parse(localStorage.getItem(STORE));}catch(e){}
+  if(!Array.isArray(v)||!v.length){ const s=seed(); localStorage.setItem(VERKEY,SEED_VER); save(s); return s; }
+  const ver=+(localStorage.getItem(VERKEY)||0);
+  if(ver<SEED_VER){
+    // Refresh built-in events (fixes stale example.com URLs / dates) while keeping
+    // anything the user added or imported (has src, or a non-seed name).
+    const userRows=v.filter(e=>!isSeedRow(e));
+    const merged=seed().concat(userRows);
+    localStorage.setItem(VERKEY,SEED_VER); save(merged); return merged;
+  }
+  return v;
 }
 function save(d){data=d||data; localStorage.setItem(STORE,JSON.stringify(data))}
 
