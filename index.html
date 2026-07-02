@@ -459,8 +459,6 @@ function openDetail(e){
     ${e.src?`<div class="det-row"><span class="k">Source</span><span>Imported via ${esc(e.src)}</span></div>`:''}
     <div class="modal-actions">
       <button class="btn" onclick="downloadICS('${e.id}')">⬇ Add to calendar (.ics)</button>
-      <button class="btn" onclick="editEvent('${e.id}')">✎ Edit</button>
-      <button class="btn" style="border-color:var(--bad);color:var(--bad)" onclick="delEvent('${e.id}')">🗑 Delete</button>
     </div>`;
   showModal();
 }
@@ -513,11 +511,6 @@ function saveForm(id){
   const prev=id&&data.find(e=>e.id===id); if(prev&&prev.src)obj.src=prev.src;
   if(id){data=data.map(e=>e.id===id?obj:e)} else {data.push(obj)}
   save(); closeModal(); render();
-}
-function editEvent(id){openForm(data.find(e=>e.id===id))}
-function delEvent(id){
-  if(!confirm('Delete this hackathon?'))return;
-  data=data.filter(e=>e.id!==id); save(); closeModal(); render();
 }
 
 /* ---- .ics export ---- */
