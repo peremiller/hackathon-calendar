@@ -438,13 +438,35 @@ function render(){
 
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 
-/* ---- detail modal ---- */
+/* ---- detail modal (swipe / arrow navigable) ---- */
+let detailList=[], detailIdx=-1;
 function openDetail(e){
+  // Navigate within the events currently shown (same order as the list view).
+  detailList = filtered().slice().sort((a,b)=>a.start.localeCompare(b.start));
+  detailIdx = detailList.findIndex(x=>x.id===e.id);
+  if(detailIdx<0){ detailList=[e]; detailIdx=0; }
+  renderDetail();
+}
+function navDetail(step){
+  if(detailList.length<2) return;
+  detailIdx = (detailIdx + step + detailList.length) % detailList.length;
+  renderDetail();
+}
+function renderDetail(){
+  const e=detailList[detailIdx]; if(!e) return;
+  modalMode='detail';
   const t=todayISO();
   const dd=Math.ceil((new Date(e.start)-new Date(t))/864e5);
   const status = e.end<t?'Past event':(dd<=0?'Happening now':`In ${dd} day${dd===1?'':'s'}`);
+  const nav = detailList.length>1;
   $('#modal').innerHTML=`
     <button class="close" onclick="closeModal()">×</button>
+    ${nav?`<div style="display:flex;align-items:center;gap:10px;margin:-4px 0 10px;color:var(--muted);font-size:12.5px">
+      <button class="nav" style="width:30px;height:30px;font-size:15px" onclick="navDetail(-1)" aria-label="Previous event">‹</button>
+      <span>${detailIdx+1} / ${detailList.length}</span>
+      <button class="nav" style="width:30px;height:30px;font-size:15px" onclick="navDetail(1)" aria-label="Next event">›</button>
+      <span style="margin-left:auto;opacity:.75">swipe / arrow keys to browse</span>
+    </div>`:''}
     <h2>${esc(e.name)}</h2>
     <div style="color:var(--accent2);font-weight:700;font-size:13px">${status}</div>
     ${(rs=>`<div style="margin-top:8px"><span class="reg ${rs.cls}">${rs.dot} ${rs.label}</span></div>`)(regStatus(e))}
@@ -465,6 +487,7 @@ function openDetail(e){
 
 /* ---- add / edit form ---- */
 function openForm(ev){
+  modalMode='form';
   const e=ev||{name:'',start:todayISO(),end:todayISO(),fmt:'Online',loc:'',tags:[],url:'',desc:'',regClose:'',regOpen:'',eligibility:'Everyone'};
   $('#modal').innerHTML=`
     <button class="close" onclick="closeModal()">×</button>
@@ -731,6 +754,7 @@ function toast(msg){
   document.body.appendChild(t); setTimeout(()=>t.remove(),3400);
 }
 function openImport(){
+  modalMode='import';
   const savedIcs=localStorage.getItem('hackcal.icsurl')||'';
   $('#modal').innerHTML=`
     <button class="close" onclick="closeModal()">×</button>
@@ -854,10 +878,31 @@ function applyTheme(th){
 }
 
 /* ---- modal helpers ---- */
+let modalMode='';   // 'detail' | 'form' | 'import' — gates swipe/arrow navigation
 function showModal(){$('#modalBg').classList.add('show')}
-function closeModal(){$('#modalBg').classList.remove('show')}
+function closeModal(){$('#modalBg').classList.remove('show'); modalMode='';}
 $('#modalBg').onclick=e=>{if(e.target===$('#modalBg'))closeModal()};
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeModal();return}
+  if(modalMode==='detail'){
+    if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();navDetail(1)}
+    else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();navDetail(-1)}
+  }
+});
+// Swipe navigation on the detail modal: left/up → next, right/down → prev.
+(function(){
+  let x0=0,y0=0,t0=0;
+  const m=$('#modal');
+  m.addEventListener('touchstart',ev=>{const t=ev.changedTouches[0];x0=t.clientX;y0=t.clientY;t0=Date.now();},{passive:true});
+  m.addEventListener('touchend',ev=>{
+    if(modalMode!=='detail')return;
+    const t=ev.changedTouches[0], dx=t.clientX-x0, dy=t.clientY-y0, adx=Math.abs(dx), ady=Math.abs(dy);
+    if(Date.now()-t0>700) return;                 // too slow to be a swipe
+    if(Math.max(adx,ady)<45) return;              // too short
+    if(adx>=ady) navDetail(dx<0?1:-1);            // horizontal
+    else navDetail(dy<0?1:-1);                    // vertical
+  },{passive:true});
+})();
 
 /* ---- wire up ---- */
 $('#viewSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
