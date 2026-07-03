@@ -17,9 +17,10 @@ export default async function handler(req, res) {
   const token = process.env.DISCORD_BOT_TOKEN;
   const channel = process.env.DISCORD_CHANNEL_ID;
   if (!token || !channel) {
-    res.status(500).json({
-      error: 'Discord not configured. Set DISCORD_BOT_TOKEN and DISCORD_CHANNEL_ID env vars in Vercel.'
-    });
+    // Not an error — auto-sync just isn't set up. Report it as a normal state
+    // so the UI can show a friendly hint instead of an error.
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(200).json({ configured: false });
     return;
   }
   try {

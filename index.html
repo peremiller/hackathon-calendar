@@ -842,6 +842,11 @@ async function syncDiscord(){
   try{
     const r=await fetch('/api/discord-events');
     const j=await r.json().catch(()=>({}));
+    // Not-configured (or endpoint not deployed) is an expected state, not an error.
+    if(j.configured===false || r.status===404){
+      toast('💬 Discord auto-sync isn’t set up. Use 📥 Import to paste event messages — or add a bot token in Vercel to enable it.');
+      return;
+    }
     if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
     const text=(j.messages||[]).join('\n\n');
     const evs=parseEvents(text,'Discord');
@@ -849,7 +854,7 @@ async function syncDiscord(){
     render();
     toast(`Discord: scanned ${j.messages?j.messages.length:0} messages · added ${added} event${added===1?'':'s'}`);
   }catch(err){
-    toast('Discord sync unavailable: '+err.message);
+    toast('Couldn’t reach Discord right now — try 📥 Import to paste messages instead.');
   }finally{ btn.textContent=orig; btn.disabled=false; }
 }
 
