@@ -4,229 +4,257 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HackCal · Tech Hackathon Calendar</title>
+<meta name="theme-color" content="#07111f">
+<meta name="description" content="Discover, filter, organize, and export real tech hackathons with HackCal.">
+<link rel="icon" type="image/png" href="assets/hackcal-logo.png">
+<link rel="apple-touch-icon" href="assets/hackcal-logo.png">
+<link rel="stylesheet" href="assets/phosphor/style.css">
 <style>
   :root{
-    --bg:#0b0f1a; --grad:#16203a; --panel:#121829; --panel2:#1a2138; --line:#26304d;
-    --txt:#e8edf7; --muted:#94a3c4; --accent:#6c8cff; --accent2:#22d3ee;
-    --good:#34d399; --warn:#fbbf24; --bad:#fb7185; --chip:#1f2945;
-    --headbg:rgba(11,15,26,.82);
-    --shadow:0 10px 30px rgba(0,0,0,.35);
+    color-scheme:dark;
+    --bg:#07111f; --panel:#0b1726; --panel2:#102033; --panel3:#14253a; --line:#22344a;
+    --txt:#f4f7fb; --muted:#99a8bb; --subtle:#6f8095; --accent:#5865f2; --accent-strong:#4151dc;
+    --accent-soft:#202a64; --cyan:#58d5df; --good:#91dc23; --warn:#ffad19; --bad:#f26b75;
+    --violet:#9a67f6; --chip:#101d2e; --header:#081321; --shadow:0 18px 50px rgba(0,0,0,.28);
+    --event-online:#58d5df; --event-person:#397df5; --event-hybrid:#9a67f6;
   }
   :root[data-theme="light"]{
-    --bg:#eef2fb; --grad:#dde6fb; --panel:#ffffff; --panel2:#f3f6fd; --line:#d7deee;
-    --txt:#1b2238; --muted:#5a6585; --accent:#4f6bff; --accent2:#0891b2;
-    --good:#059669; --warn:#b45309; --bad:#e11d48; --chip:#eef2fb;
-    --headbg:rgba(255,255,255,.86);
-    --shadow:0 10px 28px rgba(40,55,90,.12);
+    color-scheme:light;
+    --bg:#f4f7fb; --panel:#ffffff; --panel2:#eef3f8; --panel3:#e6edf5; --line:#d6e0eb;
+    --txt:#132033; --muted:#596a80; --subtle:#7c8ca0; --accent:#4e5de4; --accent-strong:#3c49c7;
+    --accent-soft:#e8ebff; --cyan:#068e9c; --good:#4b8700; --warn:#b76600; --bad:#bf4051;
+    --violet:#7544d8; --chip:#f1f5f9; --header:#ffffff; --shadow:0 18px 45px rgba(31,53,79,.12);
+    --event-online:#0f99a6; --event-person:#2868d7; --event-hybrid:#7649cf;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0}
-  body{
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:radial-gradient(1200px 600px at 80% -10%,var(--grad) 0%,var(--bg) 55%);
-    color:var(--txt); min-height:100vh; line-height:1.45;
-    transition:background .25s,color .25s;
-  }
-  header{
-    position:sticky; top:0; z-index:20; backdrop-filter:blur(10px);
-    background:var(--headbg); border-bottom:1px solid var(--line);
-  }
-  .bar{max-width:1180px; margin:0 auto; padding:14px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap}
-  .brand{display:flex; align-items:center; gap:10px; font-weight:800; font-size:20px; letter-spacing:.3px}
-  .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:17px;box-shadow:var(--shadow)}
-  .brand small{display:block;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
+  html,body{margin:0;min-height:100%}
+  body{font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--txt);line-height:1.45;transition:background .2s,color .2s;-webkit-font-smoothing:antialiased}
+  button,input,select,textarea{font:inherit}
+  button{color:inherit}
+  .topbar{position:sticky;top:0;z-index:30;height:70px;background:color-mix(in srgb,var(--header) 94%,transparent);border-bottom:1px solid var(--line);backdrop-filter:blur(18px)}
+  .bar{height:100%;display:flex;align-items:center;gap:16px;padding:0 20px}
+  .brand{display:flex;align-items:center;gap:10px;min-width:230px;font-size:22px;font-weight:750;letter-spacing:-.35px}
+  .logo{width:38px;height:38px;border-radius:9px;object-fit:cover;border:1px solid var(--line)}
+  .brand small{display:none}
   .spacer{flex:1}
-  .btn{
-    border:1px solid var(--line); background:var(--panel2); color:var(--txt);
-    padding:8px 14px; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600;
-    display:inline-flex; align-items:center; gap:7px; transition:.15s; white-space:nowrap;
-  }
-  .btn:hover{border-color:var(--accent); transform:translateY(-1px)}
-  .btn.primary{background:linear-gradient(135deg,var(--accent),#5a7bff); border-color:transparent}
-  .seg{display:flex; border:1px solid var(--line); border-radius:10px; overflow:hidden}
-  .seg button{background:var(--panel); border:0; color:var(--muted); padding:8px 14px; cursor:pointer; font-weight:600; font-size:13px}
-  .seg button.on{background:var(--accent); color:#fff}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+  .seg button,.btn,.icon-btn,.nav{border:0;background:transparent;cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .15s}
+  .seg button{display:flex;align-items:center;gap:7px;padding:9px 14px;color:var(--muted);font-size:13px;font-weight:650}
+  .seg button.on{background:var(--accent-strong);color:white}
+  .top-actions{display:flex;align-items:center;gap:3px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border:1px solid transparent;border-radius:8px;color:var(--txt);font-size:13px;font-weight:620;white-space:nowrap}
+  .btn:hover,.icon-btn:hover,.nav:hover{background:var(--panel2);border-color:var(--line)}
+  .btn:focus-visible,.icon-btn:focus-visible,.nav:focus-visible,.seg button:focus-visible,.filter-row:focus-visible,.event-bar:focus-visible,.agenda-row:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:white;padding-inline:16px}
+  .btn.primary:hover{background:var(--accent-strong);transform:translateY(-1px)}
+  .btn.secondary{border-color:var(--line);background:var(--panel)}
+  .icon-btn,.nav{width:38px;height:38px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-size:18px}
+  .theme-toggle{border-radius:999px;width:58px;display:flex;gap:2px;padding:3px}
+  .theme-toggle i{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;font-size:15px}
+  :root:not([data-theme="light"]) .theme-toggle .ph-moon{background:var(--panel3);color:white}
+  :root[data-theme="light"] .theme-toggle .ph-sun{background:var(--accent-soft);color:var(--accent)}
+  .menu-wrap{position:relative}
+  .tools-menu{position:absolute;right:0;top:calc(100% + 8px);width:210px;padding:7px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);display:none}
+  .tools-menu.show{display:block}
+  .tools-menu button{width:100%;display:flex;align-items:center;gap:9px;padding:9px 10px;border:0;border-radius:7px;background:transparent;color:var(--txt);text-align:left;cursor:pointer}
+  .tools-menu button:hover{background:var(--panel2)}
 
-  main{max-width:1180px; margin:0 auto; padding:20px}
-  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:18px}
-  input,select,textarea{
-    background:var(--panel); border:1px solid var(--line); color:var(--txt);
-    padding:9px 12px; border-radius:10px; font-size:14px; font-family:inherit;
-  }
-  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
-  .search{flex:1; min-width:200px}
-  .chips{display:flex; gap:8px; flex-wrap:wrap}
-  .chip{
-    background:var(--chip); border:1px solid var(--line); color:var(--muted);
-    padding:6px 12px; border-radius:999px; font-size:12.5px; cursor:pointer; font-weight:600; transition:.15s;
-  }
-  .chip.on{background:var(--accent); color:#fff; border-color:transparent}
+  .app-layout{display:grid;grid-template-columns:268px minmax(660px,1fr) 310px;min-height:calc(100vh - 70px)}
+  .details-hidden .app-layout{grid-template-columns:268px minmax(660px,1fr)}
+  .details-hidden .right-rail{display:none}
+  .left-rail,.right-rail{background:color-mix(in srgb,var(--panel) 55%,var(--bg));position:sticky;top:70px;height:calc(100vh - 70px);overflow:auto}
+  .left-rail{border-right:1px solid var(--line);padding:22px 16px}
+  .right-rail{border-left:1px solid var(--line);padding:24px 22px}
+  .workspace{min-width:0;padding:20px 20px 30px}
+  .search-box{position:relative;margin-bottom:24px}
+  .search-box i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
+  input,select,textarea{background:var(--panel);border:1px solid var(--line);color:var(--txt);padding:9px 11px;border-radius:8px;font-size:13px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+  .search{width:100%;padding-left:35px}
+  .section-heading{display:flex;align-items:center;justify-content:space-between;margin:0 5px 9px;color:var(--muted);font-size:11px;font-weight:720;letter-spacing:.55px;text-transform:uppercase}
+  .text-button{border:0;background:transparent;color:var(--muted);font-size:11px;cursor:pointer;padding:2px 0}
+  .text-button:hover{color:var(--txt)}
+  .filter-section{padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+  .filter-row{width:100%;min-height:37px;display:flex;align-items:center;gap:9px;padding:7px 5px;border:0;border-radius:7px;background:transparent;color:var(--txt);cursor:pointer;text-align:left;font-size:13px}
+  .filter-row:hover{background:var(--panel2)}
+  .filter-row .filter-label{flex:1}
+  .filter-count{color:var(--muted);font-variant-numeric:tabular-nums}
+  .checkmark{width:16px;height:16px;display:grid;place-items:center;border:1px solid var(--subtle);border-radius:4px;color:transparent;font-size:12px}
+  .filter-row.on .checkmark{background:var(--accent);border-color:var(--accent);color:white}
+  .filter-row.good.on .checkmark{background:var(--good);border-color:var(--good);color:#122000}
+  .format-select{width:100%;margin-bottom:4px}
+  .rail-footer{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;padding:4px 5px}
 
-  /* Calendar */
-  .cal-head{display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom:14px}
-  .cal-head h2{margin:0; font-size:20px; min-width:200px; text-align:center}
-  .nav{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);cursor:pointer;font-size:18px}
-  .nav:hover{border-color:var(--accent)}
-  .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:8px}
-  .dow{text-align:center; color:var(--muted); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; padding:4px 0}
-  .cell{
-    min-height:110px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:8px;
-    display:flex; flex-direction:column; gap:5px; overflow:hidden;
-  }
-  .cell.out{opacity:.38}
-  .cell.today{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset}
-  .daynum{font-size:13px; font-weight:700; color:var(--muted); display:flex; justify-content:space-between; align-items:center}
-  .cell.today .daynum{color:var(--accent)}
-  .ev{
-    font-size:11.5px; padding:3px 7px; border-radius:7px; cursor:pointer; font-weight:600;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-left:3px solid;
-    background:var(--panel2);
-  }
-  .ev:hover{filter:brightness(1.25)}
-  .more{font-size:11px; color:var(--muted); cursor:pointer; padding-left:4px}
+  .stats{display:flex;align-items:stretch;gap:0;margin:0 0 18px;color:var(--muted);font-size:12px;overflow:auto}
+  .stat{min-width:108px;padding:0 18px;border-right:1px solid var(--line)}
+  .stat:first-child{padding-left:0}.stat:last-child{border-right:0}
+  .stat b{display:flex;align-items:center;gap:8px;color:var(--txt);font-size:19px;line-height:1.1;margin-bottom:3px;font-variant-numeric:tabular-nums}
+  .status-dot{width:10px;height:10px;border-radius:50%;background:var(--subtle);display:inline-block;flex:0 0 auto}
+  .status-dot.good{background:var(--good)}.status-dot.violet{background:var(--violet)}.status-dot.cyan{background:var(--cyan)}.status-dot.warn{background:var(--warn)}.status-dot.bad{background:var(--bad)}.status-dot.person{background:var(--event-person)}
+  .cal-head{display:flex;align-items:center;gap:8px;margin-bottom:15px}
+  .cal-head h2{margin:0 8px;font-size:22px;letter-spacing:-.4px;min-width:170px}
+  .cal-head .today{margin-left:auto}
+  .grid{display:grid;grid-template-columns:repeat(7,minmax(92px,1fr))}
+  .dow{padding:0 10px 10px;color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.45px}
+  .calendar-grid{grid-auto-rows:105px;border-top:1px solid var(--line);border-left:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel)}
+  .cell{min-width:0;padding:9px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel);position:relative}
+  .cell.out{background:color-mix(in srgb,var(--panel) 70%,var(--bg));color:var(--subtle)}
+  .daynum{font-size:13px;font-weight:650;color:var(--txt)}
+  .cell.out .daynum{color:var(--subtle)}
+  .cell.today .daynum span{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:white;margin:-4px}
+  .event-bar{z-index:3;align-self:start;min-width:0;height:30px;margin:36px 7px 0;padding:5px 9px;border:1px solid color-mix(in srgb,var(--event-color) 75%,var(--line));border-radius:6px;background:color-mix(in srgb,var(--event-color) 16%,var(--panel));color:var(--txt);font-size:11.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;text-align:left}
+  .event-bar[data-lane="1"]{margin-top:67px}.event-bar[data-lane="2"]{margin-top:76px;height:22px;padding-block:2px}
+  .event-bar:hover,.event-bar.selected{background:color-mix(in srgb,var(--event-color) 25%,var(--panel));box-shadow:inset 0 0 0 1px var(--event-color)}
+  .event-bar .event-dates{color:var(--muted);font-weight:500;margin-left:8px}
+  .agenda{margin-top:16px;border-top:1px solid var(--line)}
+  .agenda-head{display:flex;align-items:center;justify-content:space-between;padding:15px 2px 9px;font-size:13px}
+  .agenda-head a{color:var(--accent);text-decoration:none;font-size:12px}
+  .agenda-row{display:grid;grid-template-columns:minmax(180px,1.5fr) 100px 140px minmax(140px,1fr) 110px;align-items:center;gap:12px;min-height:46px;padding:8px;border-top:1px solid var(--line);cursor:pointer;font-size:12px}
+  .agenda-row:hover,.agenda-row.selected{background:var(--panel2)}
+  .agenda-name{display:flex;align-items:center;gap:9px;min-width:0;font-size:13px;font-weight:650}.agenda-name span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .agenda-muted{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;padding:3px 7px;border-radius:5px;background:var(--chip);color:var(--muted);font-weight:600;border:1px solid var(--line);white-space:nowrap}
+  .reg{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;padding:4px 8px;border-radius:5px;font-weight:700;border:1px solid transparent;white-space:nowrap}
+  .reg.open{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,var(--line));background:color-mix(in srgb,var(--good) 10%,var(--panel))}.reg.soon{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--line));background:color-mix(in srgb,var(--warn) 10%,var(--panel))}.reg.closed{color:var(--muted);border-color:var(--line);background:var(--chip)}.reg.preopen{color:var(--cyan);border-color:color-mix(in srgb,var(--cyan) 45%,var(--line));background:color-mix(in srgb,var(--cyan) 10%,var(--panel))}
+  .list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .card{background:var(--panel);border-bottom:1px solid var(--line);padding:15px;display:flex;gap:15px;align-items:flex-start;cursor:pointer;transition:background .15s}
+  .card:last-child{border-bottom:0}.card:hover,.card.selected{background:var(--panel2)}
+  .date-badge{flex-shrink:0;width:58px;text-align:center;background:var(--panel2);border-radius:8px;padding:7px 0;border:1px solid var(--line)}
+  .date-badge .m{font-size:10px;color:var(--accent);font-weight:800;text-transform:uppercase}.date-badge .d{font-size:23px;font-weight:800;line-height:1.05}.date-badge .y{font-size:9px;color:var(--muted)}
+  .card h3{margin:0 0 4px;font-size:15px}.card p{margin:6px 0 0;color:var(--muted);font-size:12.5px}.meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.countdown{margin-left:auto;text-align:right;font-size:11px;color:var(--muted)}.countdown b{display:block;font-size:17px;color:var(--accent)}
+  .empty{text-align:center;color:var(--muted);padding:60px 20px}
 
-  /* List */
-  .list{display:flex; flex-direction:column; gap:12px}
-  .card{
-    background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px;
-    display:flex; gap:16px; align-items:flex-start; cursor:pointer; transition:.15s; box-shadow:var(--shadow);
-  }
-  .card:hover{border-color:var(--accent); transform:translateY(-2px)}
-  .date-badge{
-    flex-shrink:0; width:64px; text-align:center; background:var(--panel2); border-radius:12px; padding:8px 0; border:1px solid var(--line);
-  }
-  .date-badge .m{font-size:11px; color:var(--accent2); font-weight:800; text-transform:uppercase; letter-spacing:.5px}
-  .date-badge .d{font-size:24px; font-weight:800; line-height:1}
-  .date-badge .y{font-size:10px; color:var(--muted)}
-  .card h3{margin:0 0 4px; font-size:16.5px}
-  .meta{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
-  .tag{font-size:11px; padding:3px 9px; border-radius:999px; background:var(--chip); color:var(--muted); font-weight:600; border:1px solid var(--line)}
-  .tag.fmt{color:#fff}
-  .reg{font-size:11px; padding:3px 9px; border-radius:999px; font-weight:700; border:1px solid transparent; white-space:nowrap}
-  .reg.open{color:var(--good); border-color:color-mix(in srgb,var(--good) 45%,transparent); background:color-mix(in srgb,var(--good) 14%,transparent)}
-  .reg.soon{color:var(--warn); border-color:color-mix(in srgb,var(--warn) 50%,transparent); background:color-mix(in srgb,var(--warn) 15%,transparent)}
-  .reg.closed{color:var(--muted); border-color:var(--line); background:var(--chip)}
-  .reg.preopen{color:var(--accent2); border-color:color-mix(in srgb,var(--accent2) 45%,transparent); background:color-mix(in srgb,var(--accent2) 13%,transparent)}
-  .card p{margin:6px 0 0; color:var(--muted); font-size:13.5px}
-  .countdown{margin-left:auto; flex-shrink:0; text-align:right; font-size:12px; color:var(--muted)}
-  .countdown b{display:block; font-size:18px; color:var(--accent2)}
+  .rail-close{float:right;margin:-8px -8px 8px 8px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:20px}
+  .eyebrow{display:flex;align-items:center;gap:8px;color:var(--good);font-size:12px;font-weight:700;margin-bottom:13px}
+  .right-rail h2{font-size:20px;margin:0 0 13px;letter-spacing:-.25px}.right-rail h3{font-size:13px;margin:22px 0 10px}
+  .detail-line{display:flex;align-items:flex-start;gap:9px;color:var(--muted);font-size:12.5px;margin:9px 0}.detail-line i{font-size:16px;margin-top:1px}
+  .detail-copy{font-size:13px;line-height:1.55;margin:18px 0;color:var(--txt)}
+  .detail-tags{display:flex;gap:6px;flex-wrap:wrap}.rail-divider{height:1px;background:var(--line);margin:20px 0}
+  .next-card{display:grid;grid-template-columns:46px 1fr;gap:10px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+  .next-date{text-align:center;color:var(--muted);font-size:10px}.next-date b{display:block;color:var(--txt);font-size:20px}.next-title{display:block;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.next-meta{display:block;color:var(--muted);font-size:11px;margin-top:5px}
+  .upcoming-item{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;font-size:11.5px}.upcoming-item span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.upcoming-item time{color:var(--muted)}
+  .legend{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:10.5px}
+  footer{text-align:center;color:var(--muted);font-size:11px;padding:24px}
 
-  .empty{text-align:center; color:var(--muted); padding:60px 20px}
-  .stats{display:flex; gap:20px; flex-wrap:wrap; margin-bottom:18px; color:var(--muted); font-size:13px}
-  .stats b{color:var(--txt); font-size:18px; display:block}
+  .modal-bg{position:fixed;inset:0;background:rgba(3,9,16,.72);backdrop-filter:blur(5px);display:none;place-items:center;z-index:50;padding:20px}.modal-bg.show{display:grid}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;width:min(590px,100%);max-height:88vh;overflow:auto;box-shadow:var(--shadow)}.modal h2{margin:0 0 5px}.modal .close{float:right;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;color:var(--muted);font-size:19px;background:transparent;border:0;border-radius:7px}.modal .close:hover{background:var(--panel2);color:var(--txt)}
+  .field{margin-top:14px;display:flex;flex-direction:column;gap:6px}.field label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px}.field input,.field select,.field textarea{width:100%}.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.modal-actions{display:flex;gap:9px;margin-top:22px;justify-content:flex-end}.det-row{display:flex;gap:10px;margin-top:11px;font-size:13px}.det-row .k{color:var(--muted);width:104px;flex-shrink:0;font-weight:600}a.link{color:var(--cyan);text-decoration:none}a.link:hover{text-decoration:underline}
 
-  /* Modal */
-  .modal-bg{position:fixed; inset:0; background:rgba(5,8,15,.7); backdrop-filter:blur(3px); display:none; place-items:center; z-index:50; padding:20px}
-  .modal-bg.show{display:grid}
-  .modal{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:24px; width:min(560px,100%); max-height:88vh; overflow:auto; box-shadow:var(--shadow)}
-  .modal h2{margin:0 0 4px}
-  .modal .close{float:right; cursor:pointer; color:var(--muted); font-size:22px; line-height:1; background:none;border:0}
-  .field{margin-top:14px; display:flex; flex-direction:column; gap:6px}
-  .field label{font-size:12.5px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.4px}
-  .field input,.field select,.field textarea{width:100%}
-  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-  .modal-actions{display:flex; gap:10px; margin-top:22px; justify-content:flex-end}
-  /* Live Sync source list — plain-cased rows, so it must sit outside .field */
-  .fieldlabel{font-size:12.5px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.4px; margin-bottom:6px}
-  .live-row{display:flex; align-items:flex-start; gap:10px; padding:10px 2px; cursor:pointer;
-    border-bottom:1px solid var(--line); font-size:14px; line-height:1.35}
-  .live-row .ic{font-size:17px; line-height:1.2}
-  .live-row .nm{flex:1; min-width:0}
-  .live-row .st{flex:0 0 auto; font-size:12px; white-space:nowrap; text-align:right}
-  .live-row .note{color:var(--muted); font-size:11.5px; line-height:1.45; margin-top:3px}
-  .live-row input{margin-top:2px; accent-color:var(--accent)}
-  .det-row{display:flex; gap:10px; margin-top:10px; font-size:14px}
-  .det-row .k{color:var(--muted); width:90px; flex-shrink:0; font-weight:600}
-  a.link{color:var(--accent2); text-decoration:none}
-  a.link:hover{text-decoration:underline}
-  footer{text-align:center; color:var(--muted); font-size:12px; padding:30px}
-  @media(max-width:720px){
-    .cell{min-height:74px}
-    .ev{font-size:10px}
-    .countdown{display:none}
-    .date-badge{width:54px}
-  }
+  .fieldlabel{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.45px;margin-bottom:6px}
+  .live-row{display:flex;align-items:flex-start;gap:10px;padding:11px 2px;cursor:pointer;border-bottom:1px solid var(--line);font-size:13px;line-height:1.4}
+  .live-row .ic{width:24px;height:24px;display:grid;place-items:center;border:1px solid var(--line);border-radius:6px;background:var(--panel2);color:var(--accent);font-size:15px;line-height:1}
+  .live-row .nm{flex:1;min-width:0}.live-row .st{flex:0 0 auto;font-size:11px;white-space:nowrap;text-align:right}
+  .live-row .note{color:var(--muted);font-size:11.5px;line-height:1.45;margin-top:3px}.live-row input{margin-top:5px;accent-color:var(--accent)}
+  .stat.action{border:0;border-right:1px solid var(--line);background:transparent;color:var(--muted);text-align:left;cursor:pointer;font:inherit}
+  .stat.action:hover b,.stat.action:focus-visible b{color:var(--accent)}
+  .stat.action:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:5px}
+  @media(max-width:1240px){.app-layout{grid-template-columns:240px minmax(620px,1fr)}.right-rail{display:none}.brand{min-width:210px}.top-action.utility{display:none}.agenda-row{grid-template-columns:minmax(180px,1.4fr) 95px 130px minmax(120px,1fr) 105px}}
+  @media(max-width:900px){.topbar{height:auto;min-height:64px}.bar{min-height:64px;flex-wrap:wrap;padding:10px 14px}.brand{min-width:auto}.app-layout{display:block}.left-rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:14px}.search-box{margin-bottom:12px}.filter-section{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:5px;padding:0;margin:0;border:0;overflow:auto}.filter-section .section-heading,.tech-section{display:none}.workspace{padding:16px}.stats{margin-top:2px}}
+  @media(max-width:720px){.brand-name{display:none}.logo{width:34px;height:34px}.bar{gap:8px}.seg button{padding:8px 10px}.top-actions .btn-label,.more-label{display:none}.top-actions .btn,.menu-wrap>.btn{width:38px;padding:8px}.btn.primary{width:40px;padding:8px}.workspace{padding:13px 10px}.cal-head h2{font-size:18px;min-width:138px}.calendar-wrap{overflow-x:auto;padding-bottom:5px}.calendar-inner{min-width:720px}.agenda-row{grid-template-columns:minmax(180px,1fr) 90px 130px}.agenda-row>*:nth-child(4),.agenda-row>*:nth-child(5){display:none}.row2{grid-template-columns:1fr}.card p{display:none}.countdown{display:none}}
 </style>
 </head>
 <body>
-<header>
+<header class="topbar">
   <div class="bar">
-    <div class="brand"><span class="logo">⚡</span><div>HackCal<small>Tech Hackathon Calendar</small></div></div>
-    <div class="spacer"></div>
-    <div class="seg" id="viewSeg">
-      <button data-view="month" class="on">📅 Calendar</button>
-      <button data-view="list">📋 List</button>
+    <div class="brand" aria-label="HackCal home">
+      <img class="logo" src="assets/hackcal-logo.png" alt="HackCal logo">
+      <span class="brand-name">HackCal</span>
     </div>
-    <button class="btn primary" id="liveBtn" title="Pull live events from Luma, Eventbrite, Meetup and Maven">🌐 Live Sync</button>
-    <button class="btn" id="importBtn">📥 Import</button>
-    <button class="btn" id="lumaBtn">🔗 Luma</button>
-    <button class="btn" id="syncBtn">🔄 Sync Discord</button>
-    <button class="btn" id="icsBtn">⬇ Export .ics</button>
-    <button class="btn primary" id="addBtn">＋ Add Hackathon</button>
-    <button class="btn" id="themeBtn" title="Toggle light / dark" aria-label="Toggle light or dark theme">🌙</button>
+    <div class="seg" id="viewSeg" aria-label="Calendar view">
+      <button data-view="month" class="on"><i class="ph ph-calendar-blank" aria-hidden="true"></i><span>Calendar</span></button>
+      <button data-view="list"><i class="ph ph-list-bullets" aria-hidden="true"></i><span>List</span></button>
+    </div>
+    <div class="spacer"></div>
+    <div class="top-actions">
+      <button class="btn secondary top-action" id="liveBtn" title="Pull live events from Luma, Eventbrite, Meetup and Maven"><i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i><span class="btn-label">Live Sync</span></button>
+      <button class="btn top-action utility" id="importBtn"><i class="ph ph-tray-arrow-down" aria-hidden="true"></i><span class="btn-label">Import</span></button>
+      <button class="btn top-action utility" id="lumaBtn"><i class="ph ph-link" aria-hidden="true"></i><span class="btn-label">Luma</span></button>
+      <button class="btn top-action utility" id="syncBtn"><i class="ph ph-discord-logo" aria-hidden="true"></i><span class="btn-label">Sync Discord</span></button>
+      <button class="btn top-action utility" id="icsBtn"><i class="ph ph-download-simple" aria-hidden="true"></i><span class="btn-label">Export .ics</span></button>
+      <div class="menu-wrap">
+        <button class="btn secondary" id="toolsBtn" aria-expanded="false" aria-controls="toolsMenu"><i class="ph ph-dots-three-outline" aria-hidden="true"></i><span class="more-label">More tools</span><i class="ph ph-caret-down" aria-hidden="true"></i></button>
+        <div class="tools-menu" id="toolsMenu" role="menu">
+          <button data-tool="live" role="menuitem"><i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i>Live event sync</button>
+          <button data-tool="import" role="menuitem"><i class="ph ph-tray-arrow-down" aria-hidden="true"></i>Import events</button>
+          <button data-tool="luma" role="menuitem"><i class="ph ph-link" aria-hidden="true"></i>Refresh Luma feed</button>
+          <button data-tool="discord" role="menuitem"><i class="ph ph-discord-logo" aria-hidden="true"></i>Sync Discord</button>
+          <button data-tool="export" role="menuitem"><i class="ph ph-download-simple" aria-hidden="true"></i>Export visible events</button>
+          <button data-tool="reset" role="menuitem"><i class="ph ph-funnel-x" aria-hidden="true"></i>Reset filters</button>
+        </div>
+      </div>
+      <button class="btn primary" id="addBtn"><i class="ph ph-plus" aria-hidden="true"></i><span class="btn-label">Add Hackathon</span></button>
+      <button class="icon-btn theme-toggle" id="themeBtn" title="Switch to light mode" aria-label="Switch to light mode" aria-pressed="false"><i class="ph ph-sun" aria-hidden="true"></i><i class="ph ph-moon" aria-hidden="true"></i></button>
+    </div>
   </div>
 </header>
 
-<main>
-  <div class="stats" id="stats"></div>
-
-  <div class="controls">
-    <input class="search" id="search" placeholder="🔎 Search hackathons, tech, location…">
-    <select id="fmtFilter">
-      <option value="">All formats</option>
-      <option value="Online">Online</option>
-      <option value="In-person">In-person</option>
-      <option value="Hybrid">Hybrid</option>
-    </select>
-    <select id="srcFilter" title="Filter by where the event came from">
-      <option value="">🌐 All sources</option>
-      <option value="Luma">🔗 Luma</option>
-      <option value="Eventbrite">🎟 Eventbrite</option>
-      <option value="Meetup">👥 Meetup</option>
-      <option value="Maven">🎓 Maven</option>
-      <option value="__manual">✍️ Added by me</option>
-    </select>
-    <label class="chip" id="upcomingOnly" style="display:inline-flex;align-items:center;gap:6px">
-      <input type="checkbox" id="upChk" style="accent-color:var(--accent)"> Upcoming only
-    </label>
-    <label class="chip" style="display:inline-flex;align-items:center;gap:6px">
-      <input type="checkbox" id="openChk" style="accent-color:var(--accent)"> 🟢 Open to register
-    </label>
-    <label class="chip" style="display:inline-flex;align-items:center;gap:6px">
-      <input type="checkbox" id="nonStuChk" style="accent-color:var(--accent)"> 🌍 Allows non-students
-    </label>
-  </div>
-  <div class="chips" id="tagChips"></div>
-
-  <!-- Calendar view -->
-  <section id="monthView">
-    <div class="cal-head">
-      <button class="nav" id="prevM">‹</button>
-      <h2 id="monthLabel"></h2>
-      <button class="nav" id="nextM">›</button>
-      <button class="btn" id="todayBtn" style="margin-left:8px">Today</button>
+<div class="app-layout">
+  <aside class="left-rail" aria-label="Hackathon filters">
+    <div class="search-box">
+      <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+      <input class="search" id="search" aria-label="Search hackathons" placeholder="Search hackathons, tech, location…">
     </div>
-    <div class="grid" id="dow"></div>
-    <div class="grid" id="calGrid" style="margin-top:8px"></div>
-  </section>
+    <section class="filter-section">
+      <div class="section-heading"><span>Filters</span><button class="text-button" id="clearFiltersBtn">Clear all</button></div>
+      <select class="format-select" id="fmtFilter" aria-label="Filter by format">
+        <option value="">All formats</option>
+        <option value="Online">Online</option>
+        <option value="In-person">In-person</option>
+        <option value="Hybrid">Hybrid</option>
+      </select>
+      <select class="format-select" id="srcFilter" aria-label="Filter by event source">
+        <option value="">All sources</option>
+        <option value="Luma">Luma</option>
+        <option value="Eventbrite">Eventbrite</option>
+        <option value="Meetup">Meetup</option>
+        <option value="Maven">Maven</option>
+        <option value="__manual">Added by me</option>
+      </select>
+      <button class="filter-row" id="upFilter" aria-pressed="false"><span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">Upcoming only</span><span class="filter-count" id="upCount">0</span></button>
+      <button class="filter-row good" id="openFilter" aria-pressed="false"><span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">Open to register</span><span class="filter-count" id="openCount">0</span></button>
+      <button class="filter-row" id="nonStuFilter" aria-pressed="false"><span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">Allows non-students</span><span class="filter-count" id="nonStuCount">0</span></button>
+    </section>
+    <section class="filter-section tech-section">
+      <div class="section-heading"><span>Technologies</span><button class="text-button" id="clearTagsBtn">Clear</button></div>
+      <div id="tagChips"></div>
+    </section>
+    <div class="rail-footer"><span id="railEventCount">0 events</span><button class="text-button" id="resetFiltersBtn">Reset filters</button></div>
+  </aside>
 
-  <!-- List view -->
-  <section id="listView" style="display:none">
-    <div class="list" id="listEl"></div>
-  </section>
-</main>
+  <main class="workspace">
+    <div class="stats" id="stats"></div>
+    <section id="monthView">
+      <div class="cal-head">
+        <button class="nav" id="prevM" aria-label="Previous month"><i class="ph ph-caret-left" aria-hidden="true"></i></button>
+        <button class="nav" id="nextM" aria-label="Next month"><i class="ph ph-caret-right" aria-hidden="true"></i></button>
+        <h2 id="monthLabel"></h2>
+        <button class="btn secondary today" id="todayBtn">Today</button>
+      </div>
+      <div class="calendar-wrap">
+        <div class="calendar-inner">
+          <div class="grid" id="dow"></div>
+          <div class="grid calendar-grid" id="calGrid"></div>
+        </div>
+      </div>
+      <div class="agenda" id="agendaEl"></div>
+    </section>
+    <section id="listView" style="display:none">
+      <div class="list" id="listEl"></div>
+    </section>
+    <footer>HackCal keeps your calendar data in this browser · <span id="ver"></span></footer>
+  </main>
 
-<!-- Detail / Add modal -->
-<div class="modal-bg" id="modalBg">
-  <div class="modal" id="modal"></div>
+  <aside class="right-rail" id="rightRail" aria-label="Selected hackathon details"></aside>
 </div>
 
-<footer>HackCal — runs entirely in your browser · data saved to localStorage · <span id="ver"></span></footer>
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal" role="dialog" aria-modal="true"></div>
+</div>
 
 <script>
 const STORE='hackcal.v1';
 const TECH=['AI/ML','Web3','FinTech','HealthTech','Climate','Gaming','AR/VR','Robotics','Cybersecurity','Open Source','Mobile','Data','DevTools','Hardware'];
-const FMT_COLORS={'Online':'#22d3ee','In-person':'#fb7185','Hybrid':'#a78bfa'};
+const FMT_COLORS={'Online':'var(--event-online)','In-person':'var(--event-person)','Hybrid':'var(--event-hybrid)'};
 const $=s=>document.querySelector(s);
 const pad=n=>String(n).padStart(2,'0');
 const uid=()=>{
@@ -300,8 +328,16 @@ function save(d){data=d||data; localStorage.setItem(STORE,JSON.stringify(data))}
 /* ---- state ---- */
 let view='month';
 let cur=new Date(); cur.setDate(1);
+const currentMonthEnd=new Date(cur.getFullYear(),cur.getMonth()+1,0);
+const currentMonthEndISO=`${currentMonthEnd.getFullYear()}-${pad(currentMonthEnd.getMonth()+1)}-${pad(currentMonthEnd.getDate())}`;
+const currentMonthStartISO=`${cur.getFullYear()}-${pad(cur.getMonth()+1)}-01`;
+if(!data.some(e=>e.end>=currentMonthStartISO&&e.start<=currentMonthEndISO)){
+  const nextEvent=[...data].filter(e=>e.end>=todayISO()).sort((a,b)=>a.start.localeCompare(b.start))[0];
+  if(nextEvent){cur=new Date(nextEvent.start+'T00:00');cur.setDate(1)}
+}
 let activeTags=new Set();
 let q='', fmtF='', upOnly=false, openOnly=false, nonStuOnly=false, srcF='';
+let selectedEventId='';
 
 /* ---- filtering ---- */
 function filtered(){
@@ -327,31 +363,58 @@ function renderStats(){
   const t=todayISO();
   const up=data.filter(e=>e.end>=t).length;
   const openNow=data.filter(isOpenForReg).length;
-  const next=[...data].filter(e=>e.start>=t).sort((a,b)=>a.start.localeCompare(b.start))[0];
-  let days='—';
-  if(next){const dd=Math.ceil((new Date(next.start)-new Date(t))/864e5); days=dd===0?'Today':dd+'d'}
+  const online=data.filter(e=>e.fmt==='Online').length;
+  const nonStudents=data.filter(e=>e.eligibility!=='Students').length;
+  const invited=data.filter(e=>e.eligibility==='Invitation').length;
   const liveN=data.filter(e=>e.live).length;
   const lc=liveCfg();
   $('#stats').innerHTML=`
-    <div><b>${data.length}</b> total events</div>
-    <div><b>${up}</b> upcoming</div>
-    <div><b>${openNow}</b> 🟢 open to register</div>
-    <div><b>${days}</b> to next ${next?'· '+next.name:''}</div>
-    <div title="Click to open Live Sync" style="cursor:pointer" onclick="openLive()">🌐 <b>${liveN}</b> live · synced ${agoText(lc.lastSync)}${+lc.auto?` · auto ${lc.auto}m`:''}</div>`;
+    <div class="stat"><b>${data.length}</b>total events</div>
+    <div class="stat"><b>${up}</b>upcoming</div>
+    <div class="stat"><b><span class="status-dot good"></span>${openNow}</b>open to register</div>
+    <div class="stat"><b><span class="status-dot violet"></span>${invited}</b>by invitation</div>
+    <div class="stat"><b><span class="status-dot cyan"></span>${online}</b>online</div>
+    <div class="stat"><b>${nonStudents}</b>allows non-students</div>
+    <button class="stat action" type="button" id="liveStat" title="Open Live Sync"><b><span class="status-dot good"></span>${liveN}</b>live · ${agoText(lc.lastSync)}</button>`;
+  $('#upCount').textContent=up;
+  $('#openCount').textContent=openNow;
+  $('#nonStuCount').textContent=nonStudents;
+  $('#railEventCount').textContent=`${filtered().length} event${filtered().length===1?'':'s'}`;
+  $('#liveStat').onclick=openLive;
 }
 
 function renderChips(){
   const el=$('#tagChips'); el.innerHTML='';
   TECH.forEach(t=>{
-    const c=document.createElement('div');
-    c.className='chip'+(activeTags.has(t)?' on':'');
-    c.textContent=t;
+    const count=data.filter(e=>e.tags.includes(t)).length;
+    const c=document.createElement('button');
+    c.className='filter-row'+(activeTags.has(t)?' on':'');
+    c.setAttribute('aria-pressed',activeTags.has(t));
+    c.innerHTML=`<span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">${esc(t)}</span><span class="filter-count">${count}</span>`;
     c.onclick=()=>{activeTags.has(t)?activeTags.delete(t):activeTags.add(t); render()};
     el.appendChild(c);
   });
 }
 
-function evColor(ev){return FMT_COLORS[ev.fmt]||'#6c8cff'}
+function evColor(ev){return FMT_COLORS[ev.fmt]||'var(--accent)'}
+
+function selectEvent(e,expand=false){
+  if(!e)return;
+  selectedEventId=e.id;
+  document.body.classList.remove('details-hidden');
+  render();
+  if(expand)openDetail(e);
+}
+
+function selectedEvent(evs=filtered()){
+  let e=evs.find(x=>x.id===selectedEventId);
+  if(!e){
+    const t=todayISO();
+    e=evs.filter(x=>x.end>=t).sort((a,b)=>a.start.localeCompare(b.start))[0]||evs[0];
+    selectedEventId=e?e.id:'';
+  }
+  return e;
+}
 
 function renderMonth(){
   const dowEl=$('#dow'); dowEl.innerHTML='';
@@ -370,28 +433,70 @@ function renderMonth(){
   for(let i=1;i<=daysIn;i++) cells.push({d:i,out:false,mo:cur.getMonth()});
   while(cells.length%7) cells.push({d:cells.length-startDow-daysIn+1,out:true,mo:cur.getMonth()+1});
 
-  cells.forEach(c=>{
+  cells.forEach((c,index)=>{
     const dt=new Date(cur.getFullYear(),c.mo,c.d);
     const iso=`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+    c.iso=iso;
     const cell=document.createElement('div');
     cell.className='cell'+(c.out?' out':'')+(iso===todayISO()?' today':'');
+    cell.style.gridColumn=String(index%7+1);
+    cell.style.gridRow=String(Math.floor(index/7)+1);
     cell.innerHTML=`<div class="daynum"><span>${c.d}</span></div>`;
-    const dayEvs=evs.filter(e=>iso>=e.start && iso<=e.end);
-    const shown=dayEvs.slice(0,3);
-    shown.forEach(e=>{
-      const x=document.createElement('div');
-      x.className='ev'; x.style.borderLeftColor=evColor(e);
-      x.textContent=regStatus(e).dot+' '+e.name; x.title=e.name+' — '+regStatus(e).label;
-      x.onclick=ev=>{ev.stopPropagation(); openDetail(e)};
-      cell.appendChild(x);
-    });
-    if(dayEvs.length>3){
-      const m=document.createElement('div'); m.className='more'; m.textContent=`+${dayEvs.length-3} more`;
-      m.onclick=ev=>{ev.stopPropagation(); openDetail(dayEvs[3])};
-      cell.appendChild(m);
-    }
     grid.appendChild(cell);
   });
+
+  const chosen=selectedEvent(evs);
+  const gridStart=new Date(cells[0].iso+'T00:00');
+  const lastIndex=cells.length-1;
+  const laneUse=Array.from({length:cells.length/7},()=>[[],[],[]]);
+  const visible=evs.filter(e=>e.end>=cells[0].iso&&e.start<=cells[lastIndex].iso).sort((a,b)=>a.start.localeCompare(b.start)||b.end.localeCompare(a.end));
+  visible.forEach(e=>{
+    let start=Math.max(0,Math.round((new Date(e.start+'T00:00')-gridStart)/864e5));
+    const end=Math.min(lastIndex,Math.round((new Date(e.end+'T00:00')-gridStart)/864e5));
+    while(start<=end){
+      const row=Math.floor(start/7), rowEnd=Math.min(end,row*7+6), col=start%7;
+      let lane=laneUse[row].findIndex(items=>items.every(([a,b])=>rowEnd<a||start>b));
+      if(lane<0)lane=2;
+      laneUse[row][lane].push([start,rowEnd]);
+      const bar=document.createElement('button');
+      bar.className='event-bar'+(chosen&&chosen.id===e.id?' selected':'');
+      bar.dataset.lane=lane;
+      bar.style.gridColumn=`${col+1} / ${rowEnd%7+2}`;
+      bar.style.gridRow=String(row+1);
+      bar.style.setProperty('--event-color',evColor(e));
+      bar.setAttribute('aria-label',`${e.name}, ${fmtDate(e.start)} to ${fmtDate(e.end)}`);
+      bar.innerHTML=`<span class="status-dot" style="background:${evColor(e)}"></span>${esc(e.name)}<span class="event-dates">${fmtShort(e.start)}${e.start!==e.end?' – '+fmtShort(e.end):''}</span>`;
+      bar.onclick=()=>selectEvent(e);
+      bar.ondblclick=()=>selectEvent(e,true);
+      grid.appendChild(bar);
+      start=rowEnd+1;
+    }
+  });
+  renderAgenda();
+}
+
+function renderAgenda(){
+  const el=$('#agendaEl');
+  const t=todayISO();
+  const evs=filtered().filter(e=>e.end>=t).sort((a,b)=>a.start.localeCompare(b.start)).slice(0,6);
+  el.innerHTML=`<div class="agenda-head"><span>What's happening next</span><a href="#" id="viewScheduleLink">View full schedule <i class="ph ph-arrow-right" aria-hidden="true"></i></a></div>`;
+  evs.forEach(e=>{
+    const rs=regStatus(e);
+    const row=document.createElement('div');
+    row.className='agenda-row'+(e.id===selectedEventId?' selected':'');
+    row.tabIndex=0;
+    row.innerHTML=`
+      <div class="agenda-name"><span class="status-dot" style="background:${evColor(e)}"></span><span>${esc(e.name)}</span></div>
+      <div><span class="tag">${esc(e.fmt)}</span></div>
+      <div class="agenda-muted">${fmtShort(e.start)}${e.start!==e.end?' – '+fmtShort(e.end):''}</div>
+      <div class="agenda-muted"><i class="ph ph-map-pin" aria-hidden="true"></i> ${esc(e.loc)}</div>
+      <div><span class="reg ${rs.cls}">${esc(rs.short)}</span></div>`;
+    row.onclick=()=>selectEvent(e);
+    row.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();selectEvent(e)}};
+    el.appendChild(row);
+  });
+  const link=$('#viewScheduleLink');
+  if(link)link.onclick=ev=>{ev.preventDefault();setView('list')};
 }
 
 function fmtDate(iso){const d=new Date(iso+'T00:00');return d.toLocaleDateString('default',{month:'short',day:'numeric',year:'numeric'})}
@@ -400,22 +505,22 @@ function daysBetween(a,b){return Math.ceil((new Date(a)-new Date(b))/864e5)}
 // Registration status for an event, derived from regOpen/regClose (or start as fallback).
 function regStatus(e){
   const t=todayISO();
-  if(e.end < t) return {label:'Event ended', cls:'closed', dot:'⚪'};
-  if(e.regOpen && t < e.regOpen) return {label:'Opens '+fmtShort(e.regOpen), cls:'preopen', dot:'🔵'};
+  if(e.end < t) return {label:'Event ended', short:'Ended', cls:'closed'};
+  if(e.regOpen && t < e.regOpen) return {label:'Opens '+fmtShort(e.regOpen), short:'Opens later', cls:'preopen'};
   const rc = e.regClose || e.start;
   if(t > rc){
     // deadline passed but event not over → registration closed (may be in progress)
-    return {label: e.start<=t ? 'Registration closed · in progress' : 'Registration closed', cls:'closed', dot:'🔴'};
+    return {label: e.start<=t ? 'Registration closed · in progress' : 'Registration closed', short:'Registration closed', cls:'closed'};
   }
   const days=daysBetween(rc,t);
-  if(days<=7) return {label: days<=0?'Closes today':`Closing soon · ${days}d left`, cls:'soon', dot:'🟠'};
-  return {label:`Open · until ${fmtShort(rc)}`, cls:'open', dot:'🟢'};
+  if(days<=7) return {label: days<=0?'Closes today':`Closing soon · ${days}d left`, short:'Closing soon', cls:'soon'};
+  return {label:`Open · until ${fmtShort(rc)}`, short:'Open to register', cls:'open'};
 }
 function isOpenForReg(e){const s=regStatus(e);return s.cls==='open'||s.cls==='soon'}
 function eligBadge(e){
   return e.eligibility==='Students'
-    ? `<span class="tag" style="border-color:var(--warn);color:var(--warn)">🎓 Students only</span>`
-    : `<span class="tag" style="border-color:var(--good);color:var(--good)">🌍 Open to all</span>`;
+    ? `<span class="tag" style="border-color:var(--warn);color:var(--warn)"><i class="ph ph-student" aria-hidden="true"></i>Students only</span>`
+    : `<span class="tag" style="border-color:var(--good);color:var(--good)"><i class="ph ph-users" aria-hidden="true"></i>Open to all</span>`;
 }
 const approx=e=>e.dateConf==='typical'?'≈ ':'';
 function renderList(){
@@ -428,7 +533,8 @@ function renderList(){
     const dd=Math.ceil((new Date(e.start)-new Date(t))/864e5);
     const cd= e.end<t ? 'Past' : (dd<=0?'Live / Today':dd+' days');
     const span = e.start!==e.end ? ` – ${fmtDate(e.end)}` : '';
-    const card=document.createElement('div'); card.className='card'; card.onclick=()=>openDetail(e);
+    const card=document.createElement('div'); card.className='card'+(e.id===selectedEventId?' selected':''); card.onclick=()=>selectEvent(e);
+    card.ondblclick=()=>selectEvent(e,true);
     card.innerHTML=`
       <div class="date-badge">
         <div class="m">${d.toLocaleString('default',{month:'short'})}</div>
@@ -440,23 +546,64 @@ function renderList(){
         <div style="color:var(--muted);font-size:13px">${approx(e)}${fmtDate(e.start)}${span} · ${esc(e.loc)}</div>
         ${e.desc?`<p>${esc(e.desc)}</p>`:''}
         <div class="meta">
-          ${(rs=>`<span class="reg ${rs.cls}">${rs.dot} ${rs.label}</span>`)(regStatus(e))}
+          ${(rs=>`<span class="reg ${rs.cls}">${rs.label}</span>`)(regStatus(e))}
           ${eligBadge(e)}
           <span class="tag fmt" style="background:${evColor(e)}">${e.fmt}</span>
           ${e.tags.map(tg=>`<span class="tag">${tg}</span>`).join('')}
           ${e.src?`<span class="tag" style="border-color:var(--accent);color:var(--accent)">${srcIcon(e.src)} ${esc(e.src)}</span>`:''}
         </div>
       </div>
-      <div class="countdown"><b>${e.end<t?'✓':dd<=0?'🔴':dd}</b>${cd}</div>`;
+      <div class="countdown"><b>${e.end<t?'Done':dd<=0?'Now':dd}</b>${cd}</div>`;
     el.appendChild(card);
   });
 }
 
+function renderRightRail(){
+  const rail=$('#rightRail');
+  const evs=filtered().slice().sort((a,b)=>a.start.localeCompare(b.start));
+  const e=selectedEvent(evs);
+  if(!e){rail.innerHTML='<div class="empty">Select an event to see its details.</div>';return}
+  const rs=regStatus(e);
+  const currentIndex=evs.findIndex(x=>x.id===e.id);
+  const future=evs.filter(x=>x.end>=todayISO()&&x.id!==e.id);
+  const next=future.find(x=>x.start>=e.end)||future[0];
+  const more=future.filter(x=>!next||x.id!==next.id).slice(0,5);
+  rail.innerHTML=`
+    <button class="rail-close" id="closeRail" aria-label="Hide details"><i class="ph ph-x" aria-hidden="true"></i></button>
+    <div class="eyebrow"><span class="status-dot ${rs.cls==='open'?'good':rs.cls==='soon'?'warn':rs.cls==='closed'?'bad':'cyan'}"></span>${esc(rs.short)}</div>
+    <h2>${esc(e.name)}</h2>
+    <div class="detail-line"><i class="ph ph-calendar-blank" aria-hidden="true"></i><span>${fmtDate(e.start)}${e.start!==e.end?' – '+fmtDate(e.end):''}</span></div>
+    <div class="detail-line"><i class="ph ph-map-pin" aria-hidden="true"></i><span>${esc(e.loc)}</span></div>
+    <div class="detail-line"><i class="ph ph-users" aria-hidden="true"></i><span>${e.eligibility==='Students'?'Students only':'Open to all'}</span></div>
+    ${e.url?`<a class="btn secondary" style="width:100%;color:var(--good);border-color:color-mix(in srgb,var(--good) 50%,var(--line))" href="${esc(e.url)}" target="_blank" rel="noopener">${esc(rs.short)}<i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>`:`<span class="reg ${rs.cls}">${esc(rs.label)}</span>`}
+    ${e.desc?`<p class="detail-copy">${esc(e.desc)}</p>`:''}
+    <div class="detail-tags"><span class="tag">${esc(e.fmt)}</span>${e.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+    <div class="modal-actions" style="justify-content:flex-start;margin-top:15px"><button class="btn secondary" id="expandDetail"><i class="ph ph-arrows-out" aria-hidden="true"></i>Full details</button><button class="btn secondary" id="railCalendar"><i class="ph ph-calendar-plus" aria-hidden="true"></i>Add to calendar</button></div>
+    <div class="rail-divider"></div>
+    ${next?`<h3>Next opportunity</h3><button class="next-card" id="nextOpportunity" style="width:100%;color:inherit;text-align:left;cursor:pointer"><span class="next-date">${new Date(next.start+'T00:00').toLocaleString('default',{month:'short'}).toUpperCase()}<b>${new Date(next.start+'T00:00').getDate()}</b>${new Date(next.start+'T00:00').toLocaleString('default',{weekday:'short'}).toUpperCase()}</span><span><span class="next-title"><span class="status-dot" style="background:${evColor(next)}"></span> ${esc(next.name)}</span><span class="next-meta">${fmtShort(next.start)}${next.start!==next.end?' – '+fmtShort(next.end):''}<br>${esc(next.loc)}</span></span></button>`:''}
+    ${more.length?`<h3>More upcoming</h3><div>${more.map(x=>`<button class="upcoming-item" data-event-id="${x.id}" style="width:100%;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer"><span class="status-dot" style="background:${evColor(x)}"></span><span>${esc(x.name)}</span><time>${fmtShort(x.start)}</time></button>`).join('')}</div>`:''}
+    <div class="rail-divider"></div>
+    <div class="legend"><span><span class="status-dot good"></span> Open to register</span><span><span class="status-dot warn"></span> Registration closing soon</span><span><span class="status-dot bad"></span> Registration closed</span><span><span class="status-dot cyan"></span> Online</span></div>`;
+  $('#expandDetail').onclick=()=>openDetail(e);
+  $('#railCalendar').onclick=()=>downloadICS(e.id);
+  $('#closeRail').onclick=()=>document.body.classList.add('details-hidden');
+  if(next)$('#nextOpportunity').onclick=()=>selectEvent(next);
+  rail.querySelectorAll('[data-event-id]').forEach(btn=>btn.onclick=()=>selectEvent(evs.find(x=>x.id===btn.dataset.eventId)));
+}
+
+function setView(nextView){
+  view=nextView;
+  $('#viewSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.view===view));
+  render();
+}
+
 function render(){
   renderStats(); renderChips();
+  [['upFilter',upOnly],['openFilter',openOnly],['nonStuFilter',nonStuOnly]].forEach(([id,on])=>{const b=$('#'+id);b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
   $('#monthView').style.display = view==='month'?'':'none';
   $('#listView').style.display = view==='list'?'':'none';
   if(view==='month') renderMonth(); else renderList();
+  renderRightRail();
 }
 
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
@@ -483,19 +630,19 @@ function renderDetail(){
   const status = e.end<t?'Past event':(dd<=0?'Happening now':`In ${dd} day${dd===1?'':'s'}`);
   const nav = detailList.length>1;
   $('#modal').innerHTML=`
-    <button class="close" onclick="closeModal()">×</button>
+    <button class="close" onclick="closeModal()" aria-label="Close"><i class="ph ph-x" aria-hidden="true"></i></button>
     ${nav?`<div style="display:flex;align-items:center;gap:10px;margin:-4px 0 10px;color:var(--muted);font-size:12.5px">
-      <button class="nav" style="width:30px;height:30px;font-size:15px" onclick="navDetail(-1)" aria-label="Previous event">‹</button>
+      <button class="nav" style="width:30px;height:30px;font-size:15px" onclick="navDetail(-1)" aria-label="Previous event"><i class="ph ph-caret-left" aria-hidden="true"></i></button>
       <span>${detailIdx+1} / ${detailList.length}</span>
-      <button class="nav" style="width:30px;height:30px;font-size:15px" onclick="navDetail(1)" aria-label="Next event">›</button>
+      <button class="nav" style="width:30px;height:30px;font-size:15px" onclick="navDetail(1)" aria-label="Next event"><i class="ph ph-caret-right" aria-hidden="true"></i></button>
       <span style="margin-left:auto;opacity:.75">swipe / arrow keys to browse</span>
     </div>`:''}
     <h2>${esc(e.name)}</h2>
-    <div style="color:var(--accent2);font-weight:700;font-size:13px">${status}</div>
-    ${(rs=>`<div style="margin-top:8px"><span class="reg ${rs.cls}">${rs.dot} ${rs.label}</span></div>`)(regStatus(e))}
+    <div style="color:var(--cyan);font-weight:700;font-size:13px">${status}</div>
+    ${(rs=>`<div style="margin-top:8px"><span class="reg ${rs.cls}">${rs.label}</span></div>`)(regStatus(e))}
     <div class="det-row"><span class="k">Dates</span><span>${fmtDate(e.start)}${e.start!==e.end?' – '+fmtDate(e.end):''}${e.dateConf==='typical'?' <span style="color:var(--muted);font-size:12px">(≈ typical schedule — verify on site)</span>':''}</span></div>
     ${e.regClose?`<div class="det-row"><span class="k">Reg. deadline</span><span>${fmtDate(e.regClose)}</span></div>`:''}
-    <div class="det-row"><span class="k">Who can join</span><span>${e.eligibility==='Students'?'🎓 Students only':'🌍 Open to all (non-students welcome)'}</span></div>
+    <div class="det-row"><span class="k">Who can join</span><span>${e.eligibility==='Students'?'<i class="ph ph-student" aria-hidden="true"></i> Students only':'<i class="ph ph-users" aria-hidden="true"></i> Open to all (non-students welcome)'}</span></div>
     <div class="det-row"><span class="k">Format</span><span><span class="tag fmt" style="background:${evColor(e)}">${e.fmt}</span></span></div>
     <div class="det-row"><span class="k">Location</span><span>${esc(e.loc)}</span></div>
     <div class="det-row"><span class="k">Tech</span><span>${e.tags.map(tg=>`<span class="tag">${tg}</span>`).join(' ')}</span></div>
@@ -503,7 +650,7 @@ function renderDetail(){
     ${e.url?`<div class="det-row"><span class="k">Link</span><a class="link" href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.url)} ↗</a></div>`:''}
     ${e.src?`<div class="det-row"><span class="k">Source</span><span>Imported via ${esc(e.src)}</span></div>`:''}
     <div class="modal-actions">
-      <button class="btn" onclick="downloadICS('${e.id}')">⬇ Add to calendar (.ics)</button>
+      <button class="btn secondary" onclick="downloadICS('${e.id}')"><i class="ph ph-calendar-plus" aria-hidden="true"></i>Add to calendar (.ics)</button>
     </div>`;
   showModal();
 }
@@ -513,7 +660,7 @@ function openForm(ev){
   modalMode='form';
   const e=ev||{name:'',start:todayISO(),end:todayISO(),fmt:'Online',loc:'',tags:[],url:'',desc:'',regClose:'',regOpen:'',eligibility:'Everyone'};
   $('#modal').innerHTML=`
-    <button class="close" onclick="closeModal()">×</button>
+    <button class="close" onclick="closeModal()" aria-label="Close"><i class="ph ph-x" aria-hidden="true"></i></button>
     <h2>${ev?'Edit':'Add'} Hackathon</h2>
     <div class="field"><label>Name</label><input id="f_name" value="${esc(e.name)}" placeholder="e.g. AI Agents Hack 2026"></div>
     <div class="row2">
@@ -531,7 +678,7 @@ function openForm(ev){
       <div class="field"><label>Location</label><input id="f_loc" value="${esc(e.loc)}" placeholder="City, Country / Virtual"></div>
     </div>
     <div class="field"><label>Who can join</label><select id="f_elig">
-      ${[['Everyone','🌍 Open to all (non-students welcome)'],['Students','🎓 Students only']].map(([v,t])=>`<option value="${v}" ${e.eligibility===v?'selected':''}>${t}</option>`).join('')}
+      ${[['Everyone','Open to all (non-students welcome)'],['Students','Students only']].map(([v,t])=>`<option value="${v}" ${e.eligibility===v?'selected':''}>${t}</option>`).join('')}
     </select></div>
     <div class="field"><label>Tech tags (comma-separated)</label><input id="f_tags" value="${esc(e.tags.join(', '))}" placeholder="AI/ML, Web3, …"></div>
     <div class="field"><label>Website / register URL</label><input id="f_url" value="${esc(e.url||'')}" placeholder="https://…"></div>
@@ -780,7 +927,7 @@ function openImport(){
   modalMode='import';
   const savedIcs=localStorage.getItem('hackcal.icsurl')||'';
   $('#modal').innerHTML=`
-    <button class="close" onclick="closeModal()">×</button>
+    <button class="close" onclick="closeModal()" aria-label="Close"><i class="ph ph-x" aria-hidden="true"></i></button>
     <h2>Import events</h2>
     <p style="color:var(--muted);font-size:13px;margin:4px 0 0">Pull events from a <b>Luma</b> / calendar feed, or paste messages from <b>Discord</b> / <b>WhatsApp</b>. HackCal detects date, title, format, location, tech tags &amp; link — review before importing.</p>
     <div class="field"><label>Source</label>
@@ -793,7 +940,7 @@ function openImport(){
       <label>Luma subscription or .ics feed URL</label>
       <div style="display:flex;gap:8px">
         <input id="imp_url" style="flex:1" value="${esc(savedIcs)}" placeholder="Paste a lu.ma/event link, a Subscribe iCal link, or any .ics / webcal:// URL">
-        <button class="btn" id="imp_fetch" onclick="importFetch()">⤵ Fetch feed</button>
+        <button class="btn secondary" id="imp_fetch" onclick="importFetch()"><i class="ph ph-download-simple" aria-hidden="true"></i>Fetch feed</button>
       </div>
       <div style="color:var(--muted);font-size:12px;margin-top:4px">Paste a single <b>lu.ma event page link</b> (e.g. <code>lu.ma/abc123</code>) and HackCal finds its .ics automatically — or for a whole calendar, open it → <b>Subscribe</b> → copy the iCal / webcal link.</div>
     </div>
@@ -801,8 +948,8 @@ function openImport(){
       <textarea id="imp_text" rows="7" placeholder="Paste an .ics feed, a Luma event, or chat messages…&#10;ETHGlobal Hackathon — March 14-16, 2026 at San Francisco. Register https://ethglobal.com"></textarea>
     </div>
     <div class="modal-actions">
-      <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn primary" onclick="runParse()">Parse →</button>
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="runParse()">Parse <i class="ph ph-arrow-right" aria-hidden="true"></i></button>
     </div>
     <div id="imp_preview"></div>`;
   showModal();
@@ -813,7 +960,7 @@ function impSrcChange(){
 }
 async function importFetch(){
   const url=$('#imp_url').value.trim(); if(!url){toast('Enter a Luma / .ics URL first');return;}
-  const btn=$('#imp_fetch'), o=btn.textContent; btn.textContent='⏳ Fetching…'; btn.disabled=true;
+  const btn=$('#imp_fetch'), o=btn.innerHTML; btn.innerHTML='<i class="ph ph-spinner-gap" aria-hidden="true"></i>Fetching…'; btn.disabled=true;
   try{
     const ics=await fetchIcs(url);
     localStorage.setItem('hackcal.icsurl',url);
@@ -821,7 +968,7 @@ async function importFetch(){
     runParse();
   }catch(e){
     $('#imp_preview').innerHTML='<p style="color:var(--bad);margin-top:14px;font-size:13.5px">Could not fetch feed: '+esc(e.message)+'</p>';
-  }finally{ btn.textContent=o; btn.disabled=false; }
+  }finally{ btn.innerHTML=o; btn.disabled=false; }
 }
 function runParse(){
   const src=$('#imp_src').value;
@@ -836,7 +983,7 @@ function runParse(){
   box.innerHTML=`<div style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
     <b>${parsedPreview.length} event${parsedPreview.length>1?'s':''} detected</b>
     <div id="imp_list" style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div>
-    <div class="modal-actions"><button class="btn primary" onclick="confirmImport()">＋ Import selected</button></div></div>`;
+    <div class="modal-actions"><button class="btn primary" onclick="confirmImport()"><i class="ph ph-plus" aria-hidden="true"></i>Import selected</button></div></div>`;
   const list=$('#imp_list');
   parsedPreview.forEach((e,i)=>{
     const row=document.createElement('label');
@@ -867,15 +1014,15 @@ function confirmImport(){
    panel with a search link and the paste-import path instead. */
 const LIVE_KEY='hackcal.live';
 const LIVE_SOURCES=[
-  {id:'luma',      label:'Luma',       icon:'🔗', live:true},
-  {id:'eventbrite',label:'Eventbrite', icon:'🎟', live:true},
-  {id:'meetup',    label:'Meetup',     icon:'👥', live:true},
-  {id:'maven',     label:'Maven',      icon:'🎓', live:true, note:'live cohort courses'},
-  {id:'linkedin',  label:'LinkedIn',   icon:'💼', live:false},
-  {id:'facebook',  label:'Facebook',   icon:'📘', live:false}
+  {id:'luma',      label:'Luma',       icon:'ph-link', live:true},
+  {id:'eventbrite',label:'Eventbrite', icon:'ph-ticket', live:true},
+  {id:'meetup',    label:'Meetup',     icon:'ph-users-three', live:true},
+  {id:'maven',     label:'Maven',      icon:'ph-graduation-cap', live:true, note:'live cohort courses'},
+  {id:'linkedin',  label:'LinkedIn',   icon:'ph-linkedin-logo', live:false},
+  {id:'facebook',  label:'Facebook',   icon:'ph-facebook-logo', live:false}
 ];
-const SRC_ICONS={Luma:'🔗',Eventbrite:'🎟',Meetup:'👥',Maven:'🎓',Discord:'🎮',WhatsApp:'💬'};
-const srcIcon=s=>SRC_ICONS[s]||'📥';
+const SRC_ICONS={Luma:'ph-link',Eventbrite:'ph-ticket',Meetup:'ph-users-three',Maven:'ph-graduation-cap',Discord:'ph-discord-logo',WhatsApp:'ph-whatsapp-logo'};
+const srcIcon=s=>`<i class="ph ${SRC_ICONS[s]||'ph-arrow-square-in'}" aria-hidden="true"></i>`;
 
 const LIVE_DEFAULTS={sources:['luma','eventbrite','meetup','maven'],filter:'hack',q:'hackathon',auto:15,lastSync:null,report:null};
 function liveCfg(){
@@ -944,15 +1091,15 @@ let liveBusy=false;
 async function liveSync(silent){
   if(liveBusy) return; liveBusy=true;
   const cfg=liveCfg();
-  const btn=$('#liveBtn'), orig=btn?btn.textContent:'';
-  if(btn){btn.textContent='⏳ Syncing…'; btn.disabled=true;}
+  const btn=$('#liveBtn'), orig=btn?btn.innerHTML:'';
+  if(btn){btn.innerHTML='<i class="ph ph-spinner-gap" aria-hidden="true"></i><span class="btn-label">Syncing…</span>'; btn.disabled=true;}
   try{
     const url='/api/live-events?q='+encodeURIComponent(cfg.q||'hackathon')+
       '&sources='+encodeURIComponent(cfg.sources.join(','))+
       '&filter='+encodeURIComponent(cfg.filter||'hack')+'&_='+Date.now();
     const r=await fetch(url);
     const j=await r.json().catch(()=>({}));
-    if(r.status===404){ if(!silent) toast('🌐 Live sync needs the /api/live-events function — deploy the app to Vercel to enable it.'); return; }
+    if(r.status===404){ if(!silent) toast('Live sync needs the /api/live-events function — deploy the app to Vercel to enable it.'); return; }
     if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
     const {added,updated}=upsertLive(j.events||[]);
     saveLiveCfg({lastSync:j.fetchedAt||new Date().toISOString(),report:j.sources||[]});
@@ -963,13 +1110,13 @@ async function liveSync(silent){
       if(added) bits.push(`${added} new`);
       if(updated) bits.push(`${updated} updated`);
       if(!added&&!updated) bits.push('already up to date');
-      toast('🌐 '+bits.join(' · '));
+      toast('Live sync · '+bits.join(' · '));
     }
   }catch(err){
     if(!silent) toast('Live sync failed: '+err.message);
   }finally{
     liveBusy=false;
-    if(btn){btn.textContent=orig||'🌐 Live Sync'; btn.disabled=false;}
+    if(btn){btn.innerHTML=orig||'<i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i><span class="btn-label">Live Sync</span>'; btn.disabled=false;}
   }
 }
 
@@ -1004,25 +1151,25 @@ function openLive(){
     const on=c.sources.includes(s.id);
     const status = !s.live
       ? `<span style="color:var(--muted)">login-only</span>`
-      : r.ok ? `<span style="color:#22c55e">✓ ${r.count} found</span>`
+      : r.ok ? `<span style="color:var(--good)"><i class="ph ph-check-circle" aria-hidden="true"></i> ${r.count} found</span>`
       : (r.error?`<span style="color:#f87171">failed</span>`:`<span style="color:var(--muted)">—</span>`);
     const searchHref = s.id==='linkedin'
       ? 'https://www.linkedin.com/search/results/events/?keywords='+encodeURIComponent(c.q||'hackathon')
       : 'https://www.facebook.com/events/search/?q='+encodeURIComponent(c.q||'hackathon');
     return `<label class="live-row">
       <input type="checkbox" class="live-src" value="${s.id}" ${on?'checked':''} ${s.live?'':'disabled'}>
-      <span class="ic">${s.icon}</span>
+      <span class="ic"><i class="ph ${s.icon}" aria-hidden="true"></i></span>
       <span class="nm"><b>${s.label}</b>${s.note?` <span style="color:var(--muted);font-size:12px">· ${s.note}</span>`:''}
         ${!s.live?`<div class="note">Can’t be fetched automatically — ${s.label} blocks signed-out access.
           <a href="${searchHref}" target="_blank" rel="noopener" style="color:var(--accent)">Search ${s.label} →</a>
-          then paste the results into 📥 Import.</div>`:''}
+          then paste the results into Import.</div>`:''}
       </span>
       <span class="st">${status}</span>
     </label>`;
   }).join('');
   $('#modal').innerHTML=`
     <button class="close" onclick="closeModal()">×</button>
-    <h2 style="margin:0">🌐 Live Sync</h2>
+    <h2 style="margin:0"><i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i> Live Sync</h2>
     <p style="color:var(--muted);font-size:13px;margin:6px 0 0">Pulls current listings straight from each site. Last synced: <b>${agoText(c.lastSync)}</b></p>
     <div style="margin-top:16px"><div class="fieldlabel">Sources</div>${rows}</div>
     <div class="row2">
@@ -1046,7 +1193,7 @@ function openLive(){
       <input id="live_q" value="${esc(c.q||'hackathon')}" placeholder="hackathon, game jam, ctf"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">Close</button>
-      <button class="btn primary" onclick="saveLiveAndSync()">🔄 Sync now</button>
+      <button class="btn primary" onclick="saveLiveAndSync()"><i class="ph ph-arrows-clockwise" aria-hidden="true"></i>Sync now</button>
     </div>`;
   showModal();
 }
@@ -1063,13 +1210,13 @@ function saveLiveAndSync(){
 
 /* ---- Discord auto-sync via serverless /api/discord-events ---- */
 async function syncDiscord(){
-  const btn=$('#syncBtn'), orig=btn.textContent; btn.textContent='⏳ Syncing…'; btn.disabled=true;
+  const btn=$('#syncBtn'), orig=btn.innerHTML; btn.innerHTML='<i class="ph ph-spinner-gap" aria-hidden="true"></i><span class="btn-label">Syncing…</span>'; btn.disabled=true;
   try{
     const r=await fetch('/api/discord-events');
     const j=await r.json().catch(()=>({}));
     // Not-configured (or endpoint not deployed) is an expected state, not an error.
     if(j.configured===false || r.status===404){
-      toast('💬 Discord auto-sync isn’t set up. Use 📥 Import to paste event messages — or add a bot token in Vercel to enable it.');
+      toast('Discord auto-sync isn’t set up. Use Import to paste event messages, or add a bot token in Vercel to enable it.');
       return;
     }
     if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
@@ -1079,8 +1226,8 @@ async function syncDiscord(){
     render();
     toast(`Discord: scanned ${j.messages?j.messages.length:0} messages · added ${added} event${added===1?'':'s'}`);
   }catch(err){
-    toast('Couldn’t reach Discord right now — try 📥 Import to paste messages instead.');
-  }finally{ btn.textContent=orig; btn.disabled=false; }
+    toast('Couldn’t reach Discord right now. Try Import to paste messages instead.');
+  }finally{ btn.innerHTML=orig; btn.disabled=false; }
 }
 
 /* ---- Luma / .ics feed sync (remembers your feed URL for one-click refresh) ---- */
@@ -1088,7 +1235,7 @@ async function syncLuma(){
   const saved=localStorage.getItem('hackcal.icsurl');
   if(!saved){ openImport(); $('#imp_src').value='Luma'; impSrcChange(); $('#imp_url').focus();
     toast('Paste your Luma subscription / .ics link, then Fetch'); return; }
-  const btn=$('#lumaBtn'), orig=btn.textContent; btn.textContent='⏳ Luma…'; btn.disabled=true;
+  const btn=$('#lumaBtn'), orig=btn.innerHTML; btn.innerHTML='<i class="ph ph-spinner-gap" aria-hidden="true"></i><span class="btn-label">Refreshing…</span>'; btn.disabled=true;
   try{
     const ics=await fetchIcs(saved);
     const evs=parseICS(ics,'Luma');
@@ -1097,14 +1244,33 @@ async function syncLuma(){
     toast(`Luma: scanned ${evs.length} event${evs.length===1?'':'s'} · added ${added}`);
   }catch(err){
     toast('Luma sync failed: '+err.message+' — reset the link via Import');
-  }finally{ btn.textContent=orig; btn.disabled=false; }
+  }finally{ btn.innerHTML=orig; btn.disabled=false; }
 }
 
 /* ---- theme ---- */
 function applyTheme(th){
   document.documentElement.setAttribute('data-theme',th);
-  const b=$('#themeBtn'); if(b) b.textContent= th==='light'?'☀️':'🌙';
+  const b=$('#themeBtn');
+  if(b){
+    const next=th==='light'?'dark':'light';
+    b.title=`Switch to ${next} mode`;
+    b.setAttribute('aria-label',`Switch to ${next} mode`);
+    b.setAttribute('aria-pressed',th==='light');
+  }
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta)meta.content=th==='light'?'#ffffff':'#07111f';
   localStorage.setItem('hackcal.theme',th);
+}
+
+function resetFilters(tagsOnly=false){
+  activeTags.clear();
+  if(!tagsOnly){
+    q=''; fmtF=''; srcF=''; upOnly=false; openOnly=false; nonStuOnly=false;
+    $('#search').value='';
+    $('#fmtFilter').value='';
+    $('#srcFilter').value='';
+  }
+  render();
 }
 
 /* ---- modal helpers ---- */
@@ -1136,9 +1302,7 @@ document.addEventListener('keydown',e=>{
 
 /* ---- wire up ---- */
 $('#viewSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
-  view=b.dataset.view;
-  $('#viewSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
-  render();
+  setView(b.dataset.view);
 });
 $('#prevM').onclick=()=>{cur.setMonth(cur.getMonth()-1);renderMonth()};
 $('#nextM').onclick=()=>{cur.setMonth(cur.getMonth()+1);renderMonth()};
@@ -1151,14 +1315,33 @@ $('#themeBtn').onclick=()=>applyTheme(document.documentElement.getAttribute('dat
 $('#icsBtn').onclick=()=>downloadFile('hackcal-all.ics',icsForEvents(filtered()));
 $('#search').oninput=e=>{q=e.target.value;render()};
 $('#fmtFilter').onchange=e=>{fmtF=e.target.value;render()};
-$('#upChk').onchange=e=>{upOnly=e.target.checked;render()};
-$('#openChk').onchange=e=>{openOnly=e.target.checked;render()};
-$('#nonStuChk').onchange=e=>{nonStuOnly=e.target.checked;render()};
 $('#liveBtn').onclick=openLive;
 $('#srcFilter').onchange=e=>{srcF=e.target.value;render()};
+$('#upFilter').onclick=()=>{upOnly=!upOnly;render()};
+$('#openFilter').onclick=()=>{openOnly=!openOnly;render()};
+$('#nonStuFilter').onclick=()=>{nonStuOnly=!nonStuOnly;render()};
+$('#clearFiltersBtn').onclick=()=>resetFilters();
+$('#clearTagsBtn').onclick=()=>resetFilters(true);
+$('#resetFiltersBtn').onclick=()=>resetFilters();
+
+const toolsBtn=$('#toolsBtn'), toolsMenu=$('#toolsMenu');
+toolsBtn.onclick=e=>{e.stopPropagation();const show=!toolsMenu.classList.contains('show');toolsMenu.classList.toggle('show',show);toolsBtn.setAttribute('aria-expanded',show)};
+toolsMenu.onclick=e=>e.stopPropagation();
+toolsMenu.querySelectorAll('[data-tool]').forEach(btn=>btn.onclick=()=>{
+  const action=btn.dataset.tool;
+  toolsMenu.classList.remove('show'); toolsBtn.setAttribute('aria-expanded','false');
+  if(action==='live')openLive();
+  if(action==='import')openImport();
+  if(action==='luma')syncLuma();
+  if(action==='discord')syncDiscord();
+  if(action==='export')downloadFile('hackcal-all.ics',icsForEvents(filtered()));
+  if(action==='reset')resetFilters();
+});
+document.addEventListener('click',()=>{toolsMenu.classList.remove('show');toolsBtn.setAttribute('aria-expanded','false')});
+
 $('#ver').textContent='v3 · '+data.length+' events';
 
-applyTheme(localStorage.getItem('hackcal.theme') || (matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'));
+applyTheme(localStorage.getItem('hackcal.theme') || 'dark');
 render();
 
 /* Kick off live sync: fetch once on load, then keep it fresh on the chosen interval. */
