@@ -126,6 +126,15 @@
   .field input,.field select,.field textarea{width:100%}
   .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
   .modal-actions{display:flex; gap:10px; margin-top:22px; justify-content:flex-end}
+  /* Live Sync source list — plain-cased rows, so it must sit outside .field */
+  .fieldlabel{font-size:12.5px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.4px; margin-bottom:6px}
+  .live-row{display:flex; align-items:flex-start; gap:10px; padding:10px 2px; cursor:pointer;
+    border-bottom:1px solid var(--line); font-size:14px; line-height:1.35}
+  .live-row .ic{font-size:17px; line-height:1.2}
+  .live-row .nm{flex:1; min-width:0}
+  .live-row .st{flex:0 0 auto; font-size:12px; white-space:nowrap; text-align:right}
+  .live-row .note{color:var(--muted); font-size:11.5px; line-height:1.45; margin-top:3px}
+  .live-row input{margin-top:2px; accent-color:var(--accent)}
   .det-row{display:flex; gap:10px; margin-top:10px; font-size:14px}
   .det-row .k{color:var(--muted); width:90px; flex-shrink:0; font-weight:600}
   a.link{color:var(--accent2); text-decoration:none}
@@ -148,6 +157,7 @@
       <button data-view="month" class="on">📅 Calendar</button>
       <button data-view="list">📋 List</button>
     </div>
+    <button class="btn primary" id="liveBtn" title="Pull live events from Luma, Eventbrite, Meetup and Maven">🌐 Live Sync</button>
     <button class="btn" id="importBtn">📥 Import</button>
     <button class="btn" id="lumaBtn">🔗 Luma</button>
     <button class="btn" id="syncBtn">🔄 Sync Discord</button>
@@ -167,6 +177,14 @@
       <option value="Online">Online</option>
       <option value="In-person">In-person</option>
       <option value="Hybrid">Hybrid</option>
+    </select>
+    <select id="srcFilter" title="Filter by where the event came from">
+      <option value="">🌐 All sources</option>
+      <option value="Luma">🔗 Luma</option>
+      <option value="Eventbrite">🎟 Eventbrite</option>
+      <option value="Meetup">👥 Meetup</option>
+      <option value="Maven">🎓 Maven</option>
+      <option value="__manual">✍️ Added by me</option>
     </select>
     <label class="chip" id="upcomingOnly" style="display:inline-flex;align-items:center;gap:6px">
       <input type="checkbox" id="upChk" style="accent-color:var(--accent)"> Upcoming only
@@ -283,7 +301,7 @@ function save(d){data=d||data; localStorage.setItem(STORE,JSON.stringify(data))}
 let view='month';
 let cur=new Date(); cur.setDate(1);
 let activeTags=new Set();
-let q='', fmtF='', upOnly=false, openOnly=false, nonStuOnly=false;
+let q='', fmtF='', upOnly=false, openOnly=false, nonStuOnly=false, srcF='';
 
 /* ---- filtering ---- */
 function filtered(){
@@ -293,6 +311,8 @@ function filtered(){
     if(upOnly && ev.end < t) return false;
     if(openOnly && !isOpenForReg(ev)) return false;
     if(nonStuOnly && ev.eligibility==='Students') return false;
+    if(srcF==='__manual'){ if(ev.src) return false; }
+    else if(srcF && ev.src!==srcF) return false;
     if(activeTags.size && !ev.tags.some(x=>activeTags.has(x))) return false;
     if(q){
       const hay=(ev.name+' '+ev.loc+' '+ev.tags.join(' ')+' '+(ev.desc||'')).toLowerCase();
@@ -310,11 +330,14 @@ function renderStats(){
   const next=[...data].filter(e=>e.start>=t).sort((a,b)=>a.start.localeCompare(b.start))[0];
   let days='—';
   if(next){const dd=Math.ceil((new Date(next.start)-new Date(t))/864e5); days=dd===0?'Today':dd+'d'}
+  const liveN=data.filter(e=>e.live).length;
+  const lc=liveCfg();
   $('#stats').innerHTML=`
     <div><b>${data.length}</b> total events</div>
     <div><b>${up}</b> upcoming</div>
     <div><b>${openNow}</b> 🟢 open to register</div>
-    <div><b>${days}</b> to next ${next?'· '+next.name:''}</div>`;
+    <div><b>${days}</b> to next ${next?'· '+next.name:''}</div>
+    <div title="Click to open Live Sync" style="cursor:pointer" onclick="openLive()">🌐 <b>${liveN}</b> live · synced ${agoText(lc.lastSync)}${+lc.auto?` · auto ${lc.auto}m`:''}</div>`;
 }
 
 function renderChips(){
@@ -421,7 +444,7 @@ function renderList(){
           ${eligBadge(e)}
           <span class="tag fmt" style="background:${evColor(e)}">${e.fmt}</span>
           ${e.tags.map(tg=>`<span class="tag">${tg}</span>`).join('')}
-          ${e.src?`<span class="tag" style="border-color:var(--accent);color:var(--accent)">${e.src==='Discord'?'🎮':e.src==='WhatsApp'?'💬':e.src==='Luma'?'🔗':'📥'} ${esc(e.src)}</span>`:''}
+          ${e.src?`<span class="tag" style="border-color:var(--accent);color:var(--accent)">${srcIcon(e.src)} ${esc(e.src)}</span>`:''}
         </div>
       </div>
       <div class="countdown"><b>${e.end<t?'✓':dd<=0?'🔴':dd}</b>${cd}</div>`;
@@ -836,6 +859,208 @@ function confirmImport(){
   toast(`Imported ${added} event${added===1?'':'s'}`+(dupes>0?` · ${dupes} duplicate${dupes===1?'':'s'} skipped`:''));
 }
 
+/* ================= LIVE SYNC =================
+   Pulls real, current listings from /api/live-events (Luma, Eventbrite, Meetup,
+   Maven) and upserts them by their source id, so re-syncing refreshes an event's
+   dates instead of piling up duplicates. LinkedIn and Facebook can't be fetched
+   server-side (both hard-gate signed-out visitors), so they're surfaced in the
+   panel with a search link and the paste-import path instead. */
+const LIVE_KEY='hackcal.live';
+const LIVE_SOURCES=[
+  {id:'luma',      label:'Luma',       icon:'🔗', live:true},
+  {id:'eventbrite',label:'Eventbrite', icon:'🎟', live:true},
+  {id:'meetup',    label:'Meetup',     icon:'👥', live:true},
+  {id:'maven',     label:'Maven',      icon:'🎓', live:true, note:'live cohort courses'},
+  {id:'linkedin',  label:'LinkedIn',   icon:'💼', live:false},
+  {id:'facebook',  label:'Facebook',   icon:'📘', live:false}
+];
+const SRC_ICONS={Luma:'🔗',Eventbrite:'🎟',Meetup:'👥',Maven:'🎓',Discord:'🎮',WhatsApp:'💬'};
+const srcIcon=s=>SRC_ICONS[s]||'📥';
+
+const LIVE_DEFAULTS={sources:['luma','eventbrite','meetup','maven'],filter:'hack',q:'hackathon',auto:15,lastSync:null,report:null};
+function liveCfg(){
+  let c={}; try{c=JSON.parse(localStorage.getItem(LIVE_KEY))||{}}catch(e){}
+  return Object.assign({},LIVE_DEFAULTS,c);
+}
+function saveLiveCfg(patch){
+  const c=Object.assign(liveCfg(),patch);
+  localStorage.setItem(LIVE_KEY,JSON.stringify(c));
+  return c;
+}
+
+// Map an aggregator record onto a HackCal event, reusing the existing tag /
+// eligibility / registration heuristics so live rows behave like imported ones.
+function fromLive(r){
+  const hay=[r.name,r.desc,r.loc,r.hay].filter(Boolean).join(' ');
+  return {
+    id:uid(), extId:r.extId, name:r.name, start:r.start, end:r.end||r.start,
+    fmt:r.fmt||'Online', loc:r.loc||'See event page',
+    tags:pickTags(hay), url:r.url||'',
+    regClose:r.regClose||pickRegClose(r.desc||'')||'',
+    eligibility:pickElig(hay), dateConf:'confirmed',
+    // Luma exposes no blurb in its discover feed — don't echo the title as a description
+    desc:(r.desc&&r.desc.trim()!==r.name.trim()?r.desc:'').slice(0,240),
+    src:r.src, kind:r.kind||'', live:true
+  };
+}
+
+// Upsert by extId; fall back to name+date so a live row never duplicates an
+// event the user already added by hand or imported from a feed.
+function upsertLive(records){
+  const byExt=new Map(); data.forEach(e=>{if(e.extId)byExt.set(e.extId,e)});
+  const byKey=new Set(data.map(evKey));
+  let added=0, updated=0;
+  for(const r of records){
+    if(!r||!r.name||!r.start) continue;
+    const ev=fromLive(r);
+    const cur=byExt.get(ev.extId);
+    if(cur){
+      const changed = cur.start!==ev.start||cur.end!==ev.end||cur.name!==ev.name||
+                      cur.loc!==ev.loc||cur.fmt!==ev.fmt||cur.url!==ev.url;
+      if(changed){
+        byKey.delete(evKey(cur));
+        Object.assign(cur,{name:ev.name,start:ev.start,end:ev.end,fmt:ev.fmt,
+          loc:ev.loc,url:ev.url,desc:ev.desc,tags:ev.tags,regClose:ev.regClose});
+        byKey.add(evKey(cur)); updated++;
+      }
+      continue;
+    }
+    if(byKey.has(evKey(ev))) continue;      // already present from another path
+    data.push(ev); byExt.set(ev.extId,ev); byKey.add(evKey(ev)); added++;
+  }
+  // Live feeds rotate what they surface, so each sync can legitimately turn up
+  // events the last one missed. Retire long-past live rows (never user-added or
+  // seed ones) so months of syncing can't grow localStorage without bound.
+  const cutoff=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+  const before=data.length;
+  const kept=data.filter(e=>!(e.live && e.end < cutoff));
+  const pruned=before-kept.length;
+  if(pruned) data=kept;
+  if(added||updated||pruned) save();
+  return {added,updated,pruned};
+}
+
+let liveBusy=false;
+async function liveSync(silent){
+  if(liveBusy) return; liveBusy=true;
+  const cfg=liveCfg();
+  const btn=$('#liveBtn'), orig=btn?btn.textContent:'';
+  if(btn){btn.textContent='⏳ Syncing…'; btn.disabled=true;}
+  try{
+    const url='/api/live-events?q='+encodeURIComponent(cfg.q||'hackathon')+
+      '&sources='+encodeURIComponent(cfg.sources.join(','))+
+      '&filter='+encodeURIComponent(cfg.filter||'hack')+'&_='+Date.now();
+    const r=await fetch(url);
+    const j=await r.json().catch(()=>({}));
+    if(r.status===404){ if(!silent) toast('🌐 Live sync needs the /api/live-events function — deploy the app to Vercel to enable it.'); return; }
+    if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
+    const {added,updated}=upsertLive(j.events||[]);
+    saveLiveCfg({lastSync:j.fetchedAt||new Date().toISOString(),report:j.sources||[]});
+    render();
+    if(modalMode==='live') openLive();          // refresh the panel's status table in place
+    if(!silent||added||updated){
+      const bits=[`${j.count||0} live listing${j.count===1?'':'s'}`];
+      if(added) bits.push(`${added} new`);
+      if(updated) bits.push(`${updated} updated`);
+      if(!added&&!updated) bits.push('already up to date');
+      toast('🌐 '+bits.join(' · '));
+    }
+  }catch(err){
+    if(!silent) toast('Live sync failed: '+err.message);
+  }finally{
+    liveBusy=false;
+    if(btn){btn.textContent=orig||'🌐 Live Sync'; btn.disabled=false;}
+  }
+}
+
+/* auto-refresh: interval while the tab is open, plus a catch-up when you come back */
+let liveTimer=null;
+function startAutoSync(){
+  if(liveTimer){clearInterval(liveTimer);liveTimer=null}
+  const mins=+liveCfg().auto||0;
+  if(mins>0) liveTimer=setInterval(()=>liveSync(true),mins*60000);
+}
+function liveStale(){
+  const c=liveCfg(); if(!c.auto) return false;
+  if(!c.lastSync) return true;
+  return (Date.now()-new Date(c.lastSync).getTime())/60000 >= +c.auto;
+}
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&liveStale()) liveSync(true) });
+
+function agoText(iso){
+  if(!iso) return 'never';
+  const m=Math.round((Date.now()-new Date(iso).getTime())/60000);
+  if(m<1) return 'just now';
+  if(m<60) return m+'m ago';
+  const h=Math.round(m/60); return h<24? h+'h ago' : Math.round(h/24)+'d ago';
+}
+
+function openLive(){
+  modalMode='live';
+  const c=liveCfg();
+  const rep={}; (c.report||[]).forEach(s=>rep[s.source]=s);
+  const rows=LIVE_SOURCES.map(s=>{
+    const r=rep[s.id]||{};
+    const on=c.sources.includes(s.id);
+    const status = !s.live
+      ? `<span style="color:var(--muted)">login-only</span>`
+      : r.ok ? `<span style="color:#22c55e">✓ ${r.count} found</span>`
+      : (r.error?`<span style="color:#f87171">failed</span>`:`<span style="color:var(--muted)">—</span>`);
+    const searchHref = s.id==='linkedin'
+      ? 'https://www.linkedin.com/search/results/events/?keywords='+encodeURIComponent(c.q||'hackathon')
+      : 'https://www.facebook.com/events/search/?q='+encodeURIComponent(c.q||'hackathon');
+    return `<label class="live-row">
+      <input type="checkbox" class="live-src" value="${s.id}" ${on?'checked':''} ${s.live?'':'disabled'}>
+      <span class="ic">${s.icon}</span>
+      <span class="nm"><b>${s.label}</b>${s.note?` <span style="color:var(--muted);font-size:12px">· ${s.note}</span>`:''}
+        ${!s.live?`<div class="note">Can’t be fetched automatically — ${s.label} blocks signed-out access.
+          <a href="${searchHref}" target="_blank" rel="noopener" style="color:var(--accent)">Search ${s.label} →</a>
+          then paste the results into 📥 Import.</div>`:''}
+      </span>
+      <span class="st">${status}</span>
+    </label>`;
+  }).join('');
+  $('#modal').innerHTML=`
+    <button class="close" onclick="closeModal()">×</button>
+    <h2 style="margin:0">🌐 Live Sync</h2>
+    <p style="color:var(--muted);font-size:13px;margin:6px 0 0">Pulls current listings straight from each site. Last synced: <b>${agoText(c.lastSync)}</b></p>
+    <div style="margin-top:16px"><div class="fieldlabel">Sources</div>${rows}</div>
+    <div class="row2">
+      <div class="field"><label>What to pull</label>
+        <select id="live_filter">
+          <option value="hack" ${c.filter==='hack'?'selected':''}>Hackathons &amp; build events (+ Maven courses)</option>
+          <option value="tech" ${c.filter==='tech'?'selected':''}>All tech events</option>
+          <option value="all"  ${c.filter==='all'?'selected':''}>Everything found</option>
+        </select>
+      </div>
+      <div class="field"><label>Auto-refresh</label>
+        <select id="live_auto">
+          <option value="0"  ${+c.auto===0?'selected':''}>Off</option>
+          <option value="5"  ${+c.auto===5?'selected':''}>Every 5 minutes</option>
+          <option value="15" ${+c.auto===15?'selected':''}>Every 15 minutes</option>
+          <option value="60" ${+c.auto===60?'selected':''}>Every hour</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Search terms (comma-separated)</label>
+      <input id="live_q" value="${esc(c.q||'hackathon')}" placeholder="hackathon, game jam, ctf"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Close</button>
+      <button class="btn primary" onclick="saveLiveAndSync()">🔄 Sync now</button>
+    </div>`;
+  showModal();
+}
+function saveLiveAndSync(){
+  saveLiveCfg({
+    sources:[...document.querySelectorAll('.live-src:checked')].map(c=>c.value),
+    filter:$('#live_filter').value,
+    auto:+$('#live_auto').value,
+    q:$('#live_q').value.trim()||'hackathon'
+  });
+  startAutoSync();
+  liveSync(false);
+}
+
 /* ---- Discord auto-sync via serverless /api/discord-events ---- */
 async function syncDiscord(){
   const btn=$('#syncBtn'), orig=btn.textContent; btn.textContent='⏳ Syncing…'; btn.disabled=true;
@@ -929,10 +1154,16 @@ $('#fmtFilter').onchange=e=>{fmtF=e.target.value;render()};
 $('#upChk').onchange=e=>{upOnly=e.target.checked;render()};
 $('#openChk').onchange=e=>{openOnly=e.target.checked;render()};
 $('#nonStuChk').onchange=e=>{nonStuOnly=e.target.checked;render()};
-$('#ver').textContent='v2 · '+data.length+' events';
+$('#liveBtn').onclick=openLive;
+$('#srcFilter').onchange=e=>{srcF=e.target.value;render()};
+$('#ver').textContent='v3 · '+data.length+' events';
 
 applyTheme(localStorage.getItem('hackcal.theme') || (matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'));
 render();
+
+/* Kick off live sync: fetch once on load, then keep it fresh on the chosen interval. */
+startAutoSync();
+liveSync(true);
 </script>
 </body>
 </html>
