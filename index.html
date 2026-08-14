@@ -113,6 +113,8 @@
   .agenda-row:hover,.agenda-row.selected{background:var(--panel2)}
   .agenda-name{display:flex;align-items:center;gap:9px;min-width:0;font-size:13px;font-weight:650}.agenda-name span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .agenda-muted{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .venue-link{color:inherit;text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 55%,transparent);text-underline-offset:2px}
+  .venue-link:hover,.venue-link:focus-visible{color:var(--accent);text-decoration-color:currentColor}
   .tag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;padding:3px 7px;border-radius:5px;background:var(--chip);color:var(--muted);font-weight:600;border:1px solid var(--line);white-space:nowrap}
   .reg{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;padding:4px 8px;border-radius:5px;font-weight:700;border:1px solid transparent;white-space:nowrap}
   .reg.open{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,var(--line));background:color-mix(in srgb,var(--good) 10%,var(--panel))}.reg.soon{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--line));background:color-mix(in srgb,var(--warn) 10%,var(--panel))}.reg.closed{color:var(--muted);border-color:var(--line);background:var(--chip)}.reg.preopen{color:var(--cyan);border-color:color-mix(in srgb,var(--cyan) 45%,var(--line));background:color-mix(in srgb,var(--cyan) 10%,var(--panel))}
@@ -151,100 +153,214 @@
   @media(max-width:1240px){.app-layout{grid-template-columns:240px minmax(620px,1fr)}.right-rail{display:none}.brand{min-width:210px}.top-action.utility{display:none}.agenda-row{grid-template-columns:minmax(180px,1.4fr) 95px 130px minmax(120px,1fr) 105px}}
   @media(max-width:900px){.topbar{height:auto;min-height:64px}.bar{min-height:64px;flex-wrap:wrap;padding:10px 14px}.brand{min-width:auto}.app-layout{display:block}.left-rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:14px}.search-box{margin-bottom:12px}.filter-section{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:5px;padding:0;margin:0;border:0;overflow:auto}.filter-section .section-heading,.tech-section{display:none}.workspace{padding:16px}.stats{margin-top:2px}}
   @media(max-width:720px){.brand-name{display:none}.logo{width:34px;height:34px}.bar{gap:8px}.seg button{padding:8px 10px}.top-actions .btn-label,.more-label{display:none}.top-actions .btn,.menu-wrap>.btn{width:38px;padding:8px}.btn.primary{width:40px;padding:8px}.workspace{padding:13px 10px}.cal-head h2{font-size:18px;min-width:138px}.calendar-wrap{overflow-x:auto;padding-bottom:5px}.calendar-inner{min-width:720px}.agenda-row{grid-template-columns:minmax(180px,1fr) 90px 130px}.agenda-row>*:nth-child(4),.agenda-row>*:nth-child(5){display:none}.row2{grid-template-columns:1fr}.card p{display:none}.countdown{display:none}}
+
+  /* v4 merged direction: premium navigation, daily briefing, and calendar workspace */
+  body{background:var(--panel);overflow-x:hidden}
+  .app-shell{display:grid;grid-template-columns:244px minmax(0,1fr);min-height:100vh;background:var(--panel)}
+  .app-main{min-width:0;background:var(--panel)}
+  .side-nav{position:sticky;top:0;height:100vh;z-index:40;display:flex;flex-direction:column;padding:20px 14px 18px;background:#071a31;color:#f7fbff;border-right:1px solid #16314f;overflow:auto}
+  .side-brand{display:flex;align-items:center;gap:12px;padding:0 4px 26px}
+  .side-brand .logo{width:46px;height:46px;border-color:#2d5dff;box-shadow:0 8px 24px rgba(40,88,255,.24)}
+  .side-brand strong{display:block;font-size:22px;letter-spacing:-.45px;line-height:1.05}
+  .side-brand small{display:block;margin-top:5px;color:#afbed0;font-size:10px;font-weight:700;letter-spacing:.42px;text-transform:uppercase}
+  .side-menu{display:flex;flex-direction:column;gap:4px}
+  .side-link{width:100%;min-height:48px;display:flex;align-items:center;gap:12px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:#c5d2df;cursor:pointer;text-align:left;font-size:14px;font-weight:620;transition:background .15s,color .15s,transform .15s}
+  .side-link i{font-size:20px;color:#9fb5ca}
+  .side-link:hover{background:#0d2948;color:white;transform:translateX(1px)}
+  .side-link.on{background:#0e315a;color:#5c8cff;box-shadow:inset 3px 0 0 #3975ff}
+  .side-link.on i{color:#5c8cff}
+  .side-tech{margin:20px 8px 0;padding-top:16px;border-top:1px solid #18334f}
+  .side-tech-toggle{width:100%;display:flex;align-items:center;gap:8px;padding:6px 4px 9px;border:0;background:transparent;color:#91a8bd;cursor:pointer;font-size:10.5px;font-weight:780;letter-spacing:.45px;text-align:left;text-transform:uppercase}
+  .side-tech-toggle span{flex:1}.side-tech-toggle i{font-size:14px;transition:transform .16s}.side-tech-toggle[aria-expanded="false"] i{transform:rotate(-90deg)}
+  .side-tech-list{display:flex;flex-direction:column;gap:3px;max-height:280px;overflow:auto;padding-right:3px;scrollbar-width:thin}
+  .side-tech-list[hidden]{display:none}
+  .side-tech-chip{width:100%;min-height:31px;display:flex;align-items:center;gap:8px;padding:5px 7px;border:0;border-radius:6px;background:transparent;color:#afbed0;cursor:pointer;font-size:11px;text-align:left}
+  .side-tech-chip:hover{background:#0d2948;color:white}.side-tech-chip.on{background:#0e315a;color:#6e99ff;font-weight:680}
+  .side-tech-check{width:14px;height:14px;display:grid;place-items:center;flex:0 0 auto;border:1px solid #52708c;border-radius:4px;font-size:9px;color:transparent}.side-tech-chip.on .side-tech-check{background:#3975ff;border-color:#3975ff;color:white}
+  .side-spacer{flex:1;min-height:26px}
+  .side-bottom{padding-top:16px;border-top:1px solid #18334f}
+  .side-theme-row{display:flex;align-items:center;justify-content:space-between;padding:0 8px 10px;color:#b8c7d7;font-size:12px}
+  .side-theme-row i{margin-right:7px;font-size:17px}
+  .side-mini-toggle{width:52px;height:28px;display:flex;align-items:center;justify-content:space-between;padding:3px;border:1px solid #29445f;border-radius:999px;background:#0d2948;color:#b8c7d7;cursor:pointer}
+  .side-mini-toggle i{width:20px;height:20px;margin:0;display:grid;place-items:center;border-radius:50%;font-size:12px}
+  :root[data-theme="light"] .side-mini-toggle .ph-sun,:root:not([data-theme="light"]) .side-mini-toggle .ph-moon{background:#fff;color:#2857e8}
+  .side-team{display:flex;align-items:center;gap:10px;margin:16px 6px 0;padding-top:16px;border-top:1px solid #18334f}
+  .side-avatar{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:#dfe8ff;color:#17336b;font-weight:800}
+  .side-team strong{display:block;font-size:12px}.side-team small{display:block;margin-top:2px;color:#8fa3b8;font-size:10px}
+
+  .topbar{height:78px;background:color-mix(in srgb,var(--panel) 96%,transparent)}
+  .bar{padding:0 16px 0 20px;gap:12px}
+  .bar>.brand{display:none}
+  .bar>.seg{margin-left:auto}
+  .top-actions{gap:8px;margin-left:auto}
+  .top-actions .btn{min-height:40px}
+  .top-actions .utility{border-color:var(--line);background:var(--panel)}
+  .app-layout{display:grid;grid-template-columns:minmax(0,1fr) 292px;min-height:calc(100vh - 78px)}
+  .details-hidden .app-layout{grid-template-columns:minmax(0,1fr)}
+  .workspace{padding:0 20px 28px;background:var(--panel)}
+  .right-rail{top:78px;height:calc(100vh - 78px);padding:0;background:var(--panel);border-left:1px solid var(--line)}
+  .rail-section{padding:20px 20px 18px;border-bottom:1px solid var(--line)}
+  .rail-section:last-child{border-bottom:0}
+  .rail-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .rail-section-head h3{margin:0;font-size:13px;letter-spacing:-.1px}
+  .rail-date{color:var(--muted);font-size:11px;margin-bottom:6px}
+  .rail-event{width:100%;display:block;padding:11px 0;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--txt);text-align:left;cursor:pointer}
+  .rail-event:last-child{border-bottom:0}.rail-event:hover,.rail-event.active{background:color-mix(in srgb,var(--accent-soft) 48%,transparent)}
+  .rail-event-title{display:flex;align-items:flex-start;gap:8px;font-size:12px;font-weight:720;line-height:1.35}
+  .rail-event-meta{display:flex;align-items:center;gap:7px;margin:7px 0 0 18px;color:var(--muted);font-size:10.5px}
+  .rail-event-meta .reg{margin-left:auto}
+  .rail-view-all{width:100%;margin-top:12px}
+
+  .stats{min-height:96px;margin:0 -20px 0;padding:20px 20px;align-items:center;border-bottom:1px solid var(--line);overflow:visible;background:var(--panel)}
+  .stat{min-width:96px;padding:0 20px}
+  .stat:first-child{padding-left:0}.stat-today{flex:1;min-width:280px}
+  .stat-today b{font-size:17px}.stat-today b span{color:var(--muted);font-size:11px;font-weight:600}
+  .stat-today>span{display:block;max-width:430px;overflow:hidden;color:var(--muted);text-overflow:ellipsis;white-space:nowrap}
+  .stat.action{min-width:136px;min-height:50px;padding-left:20px}
+  .stat.action b{font-size:14px;white-space:nowrap}.stat.action{font-size:10.5px}
+  .stat.action:last-child{border-right:0}
+  .stat.action i{font-size:17px;color:var(--accent)}
+
+  .daily-brief{display:grid;grid-template-columns:1fr 1fr;margin:16px 0 14px;border:1px solid var(--line);border-radius:9px;background:var(--panel);overflow:hidden}
+  .brief-day{min-width:0;padding:16px 16px 13px}.brief-day+ .brief-day{border-left:1px solid var(--line)}
+  .brief-head{display:flex;align-items:center;gap:7px;margin-bottom:8px;font-size:12px}
+  .brief-head strong{font-size:12px;letter-spacing:.08px}.brief-head span{color:var(--muted)}
+  .brief-count{margin-left:auto;padding:3px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent)!important;font-size:10px;font-weight:750}
+  .brief-event{width:100%;display:grid;grid-template-columns:10px minmax(0,1fr) auto auto;align-items:center;gap:8px;min-height:31px;padding:4px 0;border:0;background:transparent;color:var(--txt);text-align:left;cursor:pointer;font-size:11.5px}
+  .brief-event:hover .brief-name{color:var(--accent)}
+  .brief-name{overflow:hidden;font-weight:680;text-overflow:ellipsis;white-space:nowrap}
+  .brief-meta{color:var(--muted);font-size:10.5px;white-space:nowrap}
+  .brief-empty{padding:9px 0;color:var(--muted);font-size:11.5px}
+
+  .filter-panel{margin-bottom:14px}
+  .filter-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .filter-toolbar .search-box{flex:1 1 250px;margin:0}
+  .filter-toolbar .format-select{height:40px;margin:0;background:var(--panel)}
+  .filter-toolbar #locFilter{flex:1 1 170px;min-width:160px;max-width:230px}
+  .filter-toolbar .filter-row{width:auto;min-height:40px;padding:8px 11px;border:1px solid var(--line);background:var(--panel);white-space:nowrap}
+  .filter-toolbar .filter-count{display:none}
+  .tech-chips{display:flex;gap:7px;margin-top:10px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+  .tech-chip{min-height:30px;padding:5px 11px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--muted);cursor:pointer;font-size:10.5px;font-weight:620;white-space:nowrap}
+  .tech-chip:hover{color:var(--txt);border-color:var(--subtle)}.tech-chip.on{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 55%,var(--line));color:var(--accent)}
+  .filter-footer{display:flex;align-items:center;justify-content:space-between;margin-top:7px;color:var(--muted);font-size:10.5px}
+
+  .cal-head{margin:12px 0 11px}.cal-head h2{font-size:19px;min-width:150px}.cal-head .today{margin-left:0}
+  .view-density{display:flex;margin-left:auto;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .view-density button{min-height:36px;padding:0 17px;border:0;background:var(--panel);color:var(--muted);cursor:pointer;font-size:11px;font-weight:650}
+  .view-density button.on{background:var(--panel2);color:var(--txt)}
+  .calendar-grid{grid-auto-rows:102px;border-radius:7px}.dow{padding-bottom:8px;text-align:center}
+  .cell{padding:8px}.event-bar{height:25px;margin-top:34px;padding:3px 6px;border:0;background:transparent;font-size:10px}.event-bar[data-lane="1"]{margin-top:57px}.event-bar[data-lane="2"]{margin-top:76px;height:20px;padding-block:1px}
+  .event-bar .event-dates{display:none}.event-bar:hover,.event-bar.selected{background:var(--accent-soft);box-shadow:none}
+  .agenda{display:none}
+  footer{padding:18px 0 0}
+
+  @media(max-width:1320px){.app-shell{grid-template-columns:214px minmax(0,1fr)}.side-nav{padding-inline:10px}.top-action.utility .btn-label{display:none}.top-action.utility{width:40px;padding-inline:9px}.right-rail{display:none}.app-layout{grid-template-columns:minmax(0,1fr)}}
+  @media(max-width:1040px){.app-shell{display:block}.side-nav{position:static;height:auto;display:block;padding:10px 14px}.side-brand{padding:0}.side-brand small,.side-bottom,.side-spacer,.side-tech{display:none}.side-menu{margin-top:10px;flex-direction:row;overflow-x:auto}.side-link{width:auto;min-width:max-content;padding:0 13px}.app-main{width:100%}.filter-toolbar{flex-wrap:nowrap;overflow-x:auto}.filter-toolbar .search-box{min-width:220px}.filter-toolbar .filter-row{display:none}.stats{overflow-x:auto}.stat-today{min-width:280px}}
+  @media(max-width:760px){.topbar{height:auto}.bar{padding:10px 12px;flex-wrap:wrap}.bar>.seg{order:3;width:100%;margin:0}.bar>.seg button{flex:1;justify-content:center}.top-actions{margin-left:auto}.top-actions .utility,.menu-wrap{display:none}.app-layout{min-height:0}.workspace{padding-inline:12px}.stats{margin-inline:-12px;padding-inline:12px;min-height:82px}.stat{min-width:92px;padding-inline:13px}.stat-today{min-width:250px}.daily-brief{grid-template-columns:1fr}.brief-day+ .brief-day{border-left:0;border-top:1px solid var(--line)}.filter-toolbar{display:flex;overflow-x:auto}.filter-toolbar .search-box{min-width:250px}.filter-toolbar .format-select{min-width:135px}.calendar-inner{min-width:760px}.cal-head h2{font-size:17px}.view-density{display:none}}
 </style>
 </head>
 <body>
-<header class="topbar">
-  <div class="bar">
-    <div class="brand" aria-label="HackCal home">
+<div class="app-shell">
+  <aside class="side-nav" aria-label="HackCal navigation">
+    <div class="side-brand">
       <img class="logo" src="assets/hackcal-logo.png" alt="HackCal logo">
-      <span class="brand-name">HackCal</span>
+      <span><strong>HackCal</strong><small>Tech Hackathon Calendar</small></span>
     </div>
-    <div class="seg" id="viewSeg" aria-label="Calendar view">
-      <button data-view="month" class="on"><i class="ph ph-calendar-blank" aria-hidden="true"></i><span>Calendar</span></button>
-      <button data-view="list"><i class="ph ph-list-bullets" aria-hidden="true"></i><span>List</span></button>
-    </div>
-    <div class="spacer"></div>
-    <div class="top-actions">
-      <button class="btn secondary top-action" id="liveBtn" title="Pull live events from Luma, Eventbrite, Meetup and Maven"><i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i><span class="btn-label">Live Sync</span></button>
-      <button class="btn top-action utility" id="importBtn"><i class="ph ph-tray-arrow-down" aria-hidden="true"></i><span class="btn-label">Import</span></button>
-      <button class="btn top-action utility" id="lumaBtn"><i class="ph ph-link" aria-hidden="true"></i><span class="btn-label">Luma</span></button>
-      <button class="btn top-action utility" id="syncBtn"><i class="ph ph-discord-logo" aria-hidden="true"></i><span class="btn-label">Sync Discord</span></button>
-      <button class="btn top-action utility" id="icsBtn"><i class="ph ph-download-simple" aria-hidden="true"></i><span class="btn-label">Export .ics</span></button>
-      <div class="menu-wrap">
-        <button class="btn secondary" id="toolsBtn" aria-expanded="false" aria-controls="toolsMenu"><i class="ph ph-dots-three-outline" aria-hidden="true"></i><span class="more-label">More tools</span><i class="ph ph-caret-down" aria-hidden="true"></i></button>
-        <div class="tools-menu" id="toolsMenu" role="menu">
-          <button data-tool="live" role="menuitem"><i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i>Live event sync</button>
-          <button data-tool="import" role="menuitem"><i class="ph ph-tray-arrow-down" aria-hidden="true"></i>Import events</button>
-          <button data-tool="luma" role="menuitem"><i class="ph ph-link" aria-hidden="true"></i>Refresh Luma feed</button>
-          <button data-tool="discord" role="menuitem"><i class="ph ph-discord-logo" aria-hidden="true"></i>Sync Discord</button>
-          <button data-tool="export" role="menuitem"><i class="ph ph-download-simple" aria-hidden="true"></i>Export visible events</button>
-          <button data-tool="reset" role="menuitem"><i class="ph ph-funnel-x" aria-hidden="true"></i>Reset filters</button>
-        </div>
-      </div>
-      <button class="btn primary" id="addBtn"><i class="ph ph-plus" aria-hidden="true"></i><span class="btn-label">Add Hackathon</span></button>
-      <button class="icon-btn theme-toggle" id="themeBtn" title="Switch to light mode" aria-label="Switch to light mode" aria-pressed="false"><i class="ph ph-sun" aria-hidden="true"></i><i class="ph ph-moon" aria-hidden="true"></i></button>
-    </div>
-  </div>
-</header>
-
-<div class="app-layout">
-  <aside class="left-rail" aria-label="Hackathon filters">
-    <div class="search-box">
-      <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
-      <input class="search" id="search" aria-label="Search hackathons" placeholder="Search hackathons, tech, location…">
-    </div>
-    <section class="filter-section">
-      <div class="section-heading"><span>Filters</span><button class="text-button" id="clearFiltersBtn">Clear all</button></div>
-      <select class="format-select" id="fmtFilter" aria-label="Filter by format">
-        <option value="">All formats</option>
-        <option value="Online">Online</option>
-        <option value="In-person">In-person</option>
-        <option value="Hybrid">Hybrid</option>
-      </select>
-      <select class="format-select" id="srcFilter" aria-label="Filter by event source">
-        <option value="">All sources</option>
-        <option value="Luma">Luma</option>
-        <option value="Eventbrite">Eventbrite</option>
-        <option value="Meetup">Meetup</option>
-        <option value="Maven">Maven</option>
-        <option value="__manual">Added by me</option>
-      </select>
-      <button class="filter-row" id="upFilter" aria-pressed="false"><span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">Upcoming only</span><span class="filter-count" id="upCount">0</span></button>
-      <button class="filter-row good" id="openFilter" aria-pressed="false"><span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">Open to register</span><span class="filter-count" id="openCount">0</span></button>
-      <button class="filter-row" id="nonStuFilter" aria-pressed="false"><span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">Allows non-students</span><span class="filter-count" id="nonStuCount">0</span></button>
+    <nav class="side-menu">
+      <button class="side-link on" data-side-view="month"><i class="ph ph-calendar-blank" aria-hidden="true"></i>Calendar</button>
+      <button class="side-link" data-side-view="list"><i class="ph ph-list-bullets" aria-hidden="true"></i>List</button>
+      <button class="side-link" id="liveBtn"><i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i>Live Sync</button>
+      <button class="side-link" data-nav-action="import"><i class="ph ph-tray-arrow-down" aria-hidden="true"></i>Import</button>
+      <button class="side-link" data-nav-action="luma"><i class="ph ph-link" aria-hidden="true"></i>Luma</button>
+      <button class="side-link" data-nav-action="discord"><i class="ph ph-discord-logo" aria-hidden="true"></i>Sync Discord</button>
+      <button class="side-link" data-nav-action="export"><i class="ph ph-download-simple" aria-hidden="true"></i>Export .ics</button>
+    </nav>
+    <section class="side-tech" aria-label="Technology filters">
+      <button class="side-tech-toggle" id="sideTechToggle" type="button" aria-expanded="true" aria-controls="sideTechFilters"><span>Technologies</span><i class="ph ph-caret-down" aria-hidden="true"></i></button>
+      <div class="side-tech-list" id="sideTechFilters"></div>
     </section>
-    <section class="filter-section tech-section">
-      <div class="section-heading"><span>Technologies</span><button class="text-button" id="clearTagsBtn">Clear</button></div>
-      <div id="tagChips"></div>
-    </section>
-    <div class="rail-footer"><span id="railEventCount">0 events</span><button class="text-button" id="resetFiltersBtn">Reset filters</button></div>
+    <div class="side-spacer"></div>
+    <div class="side-bottom">
+      <div class="side-theme-row"><span><i class="ph ph-sun" aria-hidden="true"></i>Theme</span><button class="side-mini-toggle" id="sideThemeBtn" aria-label="Toggle light and dark theme"><i class="ph ph-moon" aria-hidden="true"></i><i class="ph ph-sun" aria-hidden="true"></i></button></div>
+      <button class="side-link" data-support="settings"><i class="ph ph-gear-six" aria-hidden="true"></i>Settings</button>
+      <button class="side-link" data-support="feedback"><i class="ph ph-chat-circle" aria-hidden="true"></i>Feedback</button>
+      <button class="side-link" data-support="help"><i class="ph ph-question" aria-hidden="true"></i>Help</button>
+      <div class="side-team"><span class="side-avatar">H</span><span><strong>HackCal Team</strong><small>team@hackcal.dev</small></span></div>
+    </div>
   </aside>
 
-  <main class="workspace">
-    <div class="stats" id="stats"></div>
-    <section id="monthView">
-      <div class="cal-head">
-        <button class="nav" id="prevM" aria-label="Previous month"><i class="ph ph-caret-left" aria-hidden="true"></i></button>
-        <button class="nav" id="nextM" aria-label="Next month"><i class="ph ph-caret-right" aria-hidden="true"></i></button>
-        <h2 id="monthLabel"></h2>
-        <button class="btn secondary today" id="todayBtn">Today</button>
-      </div>
-      <div class="calendar-wrap">
-        <div class="calendar-inner">
-          <div class="grid" id="dow"></div>
-          <div class="grid calendar-grid" id="calGrid"></div>
+  <div class="app-main">
+    <header class="topbar">
+      <div class="bar">
+        <button class="btn primary" id="addBtn"><i class="ph ph-plus" aria-hidden="true"></i><span class="btn-label">Add Hackathon</span></button>
+        <div class="seg" id="viewSeg" aria-label="Calendar view">
+          <button data-view="month" class="on"><i class="ph ph-calendar-blank" aria-hidden="true"></i><span>Calendar</span></button>
+          <button data-view="list"><i class="ph ph-list-bullets" aria-hidden="true"></i><span>List</span></button>
+        </div>
+        <div class="top-actions">
+          <button class="btn top-action utility" id="importBtn"><i class="ph ph-tray-arrow-down" aria-hidden="true"></i><span class="btn-label">Import</span></button>
+          <button class="btn top-action utility" id="lumaBtn"><i class="ph ph-link" aria-hidden="true"></i><span class="btn-label">Luma</span></button>
+          <button class="btn top-action utility" id="syncBtn"><i class="ph ph-discord-logo" aria-hidden="true"></i><span class="btn-label">Sync Discord</span></button>
+          <button class="btn top-action utility" id="icsBtn"><i class="ph ph-download-simple" aria-hidden="true"></i><span class="btn-label">Export .ics</span></button>
+          <div class="menu-wrap">
+            <button class="btn secondary" id="toolsBtn" aria-expanded="false" aria-controls="toolsMenu"><i class="ph ph-dots-three-outline" aria-hidden="true"></i><span class="more-label">More</span><i class="ph ph-caret-down" aria-hidden="true"></i></button>
+            <div class="tools-menu" id="toolsMenu" role="menu">
+              <button data-tool="live" role="menuitem"><i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i>Live event sync</button>
+              <button data-tool="import" role="menuitem"><i class="ph ph-tray-arrow-down" aria-hidden="true"></i>Import events</button>
+              <button data-tool="luma" role="menuitem"><i class="ph ph-link" aria-hidden="true"></i>Refresh Luma feed</button>
+              <button data-tool="discord" role="menuitem"><i class="ph ph-discord-logo" aria-hidden="true"></i>Sync Discord</button>
+              <button data-tool="export" role="menuitem"><i class="ph ph-download-simple" aria-hidden="true"></i>Export visible events</button>
+              <button data-tool="reset" role="menuitem"><i class="ph ph-funnel-x" aria-hidden="true"></i>Reset filters</button>
+            </div>
+          </div>
+          <button class="icon-btn theme-toggle" id="themeBtn" title="Switch to dark mode" aria-label="Switch to dark mode" aria-pressed="true"><i class="ph ph-sun" aria-hidden="true"></i><i class="ph ph-moon" aria-hidden="true"></i></button>
         </div>
       </div>
-      <div class="agenda" id="agendaEl"></div>
-    </section>
-    <section id="listView" style="display:none">
-      <div class="list" id="listEl"></div>
-    </section>
-    <footer>HackCal keeps your calendar data in this browser · <span id="ver"></span></footer>
-  </main>
+    </header>
 
-  <aside class="right-rail" id="rightRail" aria-label="Selected hackathon details"></aside>
+    <div class="app-layout">
+      <main class="workspace">
+        <div class="stats" id="stats"></div>
+        <section class="daily-brief" id="dailyBrief" aria-label="Today and tomorrow"></section>
+        <section class="filter-panel" aria-label="Hackathon filters">
+          <div class="filter-toolbar">
+            <div class="search-box">
+              <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+              <input class="search" id="search" aria-label="Search hackathons" placeholder="Search hackathons, tech, location…">
+            </div>
+            <select class="format-select" id="fmtFilter" aria-label="Filter by format">
+              <option value="">All formats</option><option value="Online">Online</option><option value="In-person">In-person</option><option value="Hybrid">Hybrid</option>
+            </select>
+            <select class="format-select" id="locFilter" aria-label="Filter by event location">
+              <option value="">All locations</option>
+            </select>
+            <select class="format-select" id="srcFilter" aria-label="Filter by event source">
+              <option value="">All sources</option><option value="Luma">Luma</option><option value="Eventbrite">Eventbrite</option><option value="Meetup">Meetup</option><option value="Maven">Maven</option><option value="__manual">Added by me</option>
+            </select>
+            <button class="filter-row" id="upFilter" aria-pressed="false"><span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">Upcoming only</span><span class="filter-count" id="upCount">0</span></button>
+            <button class="filter-row good" id="openFilter" aria-pressed="false"><span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">Open to register</span><span class="filter-count" id="openCount">0</span></button>
+            <button class="filter-row" id="nonStuFilter" aria-pressed="false"><span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">Allows non-students</span><span class="filter-count" id="nonStuCount">0</span></button>
+          </div>
+          <div class="tech-chips" id="tagChips"></div>
+          <div class="filter-footer"><span id="railEventCount">0 events</span><span><button class="text-button" id="clearTagsBtn">Clear categories</button> · <button class="text-button" id="clearFiltersBtn">Clear all</button> · <button class="text-button" id="resetFiltersBtn">Reset filters</button></span></div>
+        </section>
+        <section id="monthView">
+          <div class="cal-head">
+            <button class="nav" id="prevM" aria-label="Previous month"><i class="ph ph-caret-left" aria-hidden="true"></i></button>
+            <button class="nav" id="nextM" aria-label="Next month"><i class="ph ph-caret-right" aria-hidden="true"></i></button>
+            <h2 id="monthLabel"></h2>
+            <button class="btn secondary today" id="todayBtn">Today</button>
+            <div class="view-density" aria-label="Calendar density"><button class="on" type="button">Month</button><button type="button" id="weekHint">Week</button></div>
+          </div>
+          <div class="calendar-wrap"><div class="calendar-inner"><div class="grid" id="dow"></div><div class="grid calendar-grid" id="calGrid"></div></div></div>
+          <div class="agenda" id="agendaEl"></div>
+        </section>
+        <section id="listView" style="display:none"><div class="list" id="listEl"></div></section>
+        <footer>HackCal keeps your calendar data in this browser · <span id="ver"></span></footer>
+      </main>
+      <aside class="right-rail" id="rightRail" aria-label="Selected day and upcoming hackathons"></aside>
+    </div>
+  </div>
 </div>
 
 <div class="modal-bg" id="modalBg">
@@ -261,7 +377,10 @@ const uid=()=>{
   try{ if(crypto&&crypto.randomUUID) return crypto.randomUUID(); }catch(e){}
   return 'id-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);
 };
-const todayISO=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
+const phtParts=date=>Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date).filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
+const todayISO=()=>{const p=phtParts(new Date());return `${p.year}-${p.month}-${p.day}`};
+const shiftISO=(iso,days)=>{const d=new Date(iso+'T12:00:00+08:00');d.setUTCDate(d.getUTCDate()+days);return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`};
+const phtDateLabel=iso=>new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',weekday:'short',month:'short',day:'numeric'}).format(new Date(iso+'T12:00:00+08:00'));
 
 /* ---- seed data (illustrative recurring tech hackathons, dated forward) ---- */
 function seed(){
@@ -328,22 +447,17 @@ function save(d){data=d||data; localStorage.setItem(STORE,JSON.stringify(data))}
 /* ---- state ---- */
 let view='month';
 let cur=new Date(); cur.setDate(1);
-const currentMonthEnd=new Date(cur.getFullYear(),cur.getMonth()+1,0);
-const currentMonthEndISO=`${currentMonthEnd.getFullYear()}-${pad(currentMonthEnd.getMonth()+1)}-${pad(currentMonthEnd.getDate())}`;
-const currentMonthStartISO=`${cur.getFullYear()}-${pad(cur.getMonth()+1)}-01`;
-if(!data.some(e=>e.end>=currentMonthStartISO&&e.start<=currentMonthEndISO)){
-  const nextEvent=[...data].filter(e=>e.end>=todayISO()).sort((a,b)=>a.start.localeCompare(b.start))[0];
-  if(nextEvent){cur=new Date(nextEvent.start+'T00:00');cur.setDate(1)}
-}
 let activeTags=new Set();
-let q='', fmtF='', upOnly=false, openOnly=false, nonStuOnly=false, srcF='';
+let q='', fmtF='', locF='', upOnly=false, openOnly=false, nonStuOnly=false, srcF='';
 let selectedEventId='';
+let sideTechExpanded=localStorage.getItem(STORE+'.techExpanded')!=='0';
 
 /* ---- filtering ---- */
 function filtered(){
   const t=todayISO();
   return data.filter(ev=>{
     if(fmtF && ev.fmt!==fmtF) return false;
+    if(locF && ev.loc!==locF) return false;
     if(upOnly && ev.end < t) return false;
     if(openOnly && !isOpenForReg(ev)) return false;
     if(nonStuOnly && ev.eligibility==='Students') return false;
@@ -363,37 +477,74 @@ function renderStats(){
   const t=todayISO();
   const up=data.filter(e=>e.end>=t).length;
   const openNow=data.filter(isOpenForReg).length;
-  const online=data.filter(e=>e.fmt==='Online').length;
   const nonStudents=data.filter(e=>e.eligibility!=='Students').length;
-  const invited=data.filter(e=>e.eligibility==='Invitation').length;
   const liveN=data.filter(e=>e.live).length;
   const lc=liveCfg();
+  const next=[...data].filter(e=>e.end>=t).sort((a,b)=>a.start.localeCompare(b.start))[0];
   $('#stats').innerHTML=`
     <div class="stat"><b>${data.length}</b>total events</div>
     <div class="stat"><b>${up}</b>upcoming</div>
     <div class="stat"><b><span class="status-dot good"></span>${openNow}</b>open to register</div>
-    <div class="stat"><b><span class="status-dot violet"></span>${invited}</b>by invitation</div>
-    <div class="stat"><b><span class="status-dot cyan"></span>${online}</b>online</div>
-    <div class="stat"><b>${nonStudents}</b>allows non-students</div>
-    <button class="stat action" type="button" id="liveStat" title="Open Live Sync"><b><span class="status-dot good"></span>${liveN}</b>live · ${agoText(lc.lastSync)}</button>`;
+    <div class="stat stat-today"><b>Today <span>${phtDateLabel(t)} · Philippine Time (PHT)</span></b><span><i class="ph ph-arrow-bend-down-right" aria-hidden="true"></i> next · ${next?esc(next.name):'No upcoming events'}</span></div>
+    <button class="stat action" type="button" id="liveStat" title="Open Live Sync"><b><span class="status-dot good"></span>${liveN} live</b>synced ${agoText(lc.lastSync)} · auto ${lc.auto||0}m</button>
+    <button class="stat action" type="button" id="telegramStat" title="Telegram daily brief"><b><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i>Daily brief</b>7:30 AM PHT · Telegram</button>`;
   $('#upCount').textContent=up;
   $('#openCount').textContent=openNow;
   $('#nonStuCount').textContent=nonStudents;
   $('#railEventCount').textContent=`${filtered().length} event${filtered().length===1?'':'s'}`;
   $('#liveStat').onclick=openLive;
+  $('#telegramStat').onclick=openTelegramInfo;
 }
 
 function renderChips(){
-  const el=$('#tagChips'); el.innerHTML='';
+  const el=$('#tagChips'), side=$('#sideTechFilters'); el.innerHTML=''; side.innerHTML='';
   TECH.forEach(t=>{
-    const count=data.filter(e=>e.tags.includes(t)).length;
     const c=document.createElement('button');
-    c.className='filter-row'+(activeTags.has(t)?' on':'');
+    c.className='tech-chip'+(activeTags.has(t)?' on':'');
     c.setAttribute('aria-pressed',activeTags.has(t));
-    c.innerHTML=`<span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">${esc(t)}</span><span class="filter-count">${count}</span>`;
+    c.textContent=t;
     c.onclick=()=>{activeTags.has(t)?activeTags.delete(t):activeTags.add(t); render()};
     el.appendChild(c);
+    const s=document.createElement('button');
+    s.className='side-tech-chip'+(activeTags.has(t)?' on':'');
+    s.setAttribute('aria-pressed',activeTags.has(t));
+    s.innerHTML=`<span class="side-tech-check"><i class="ph ph-check" aria-hidden="true"></i></span><span>${esc(t)}</span>`;
+    s.onclick=()=>{activeTags.has(t)?activeTags.delete(t):activeTags.add(t); render()};
+    side.appendChild(s);
   });
+  $('#sideTechToggle').setAttribute('aria-expanded',sideTechExpanded);
+  side.hidden=!sideTechExpanded;
+}
+
+function renderLocationFilter(){
+  const el=$('#locFilter');
+  const locations=[...new Set(data.map(e=>(e.loc||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const signature=locations.join('\u001f');
+  if(el.dataset.locations!==signature){
+    el.replaceChildren(new Option('All locations',''),...locations.map(location=>new Option(location,location)));
+    el.dataset.locations=signature;
+  }
+  if(locF && !locations.includes(locF)) locF='';
+  el.value=locF;
+  el.title=locF||'All locations';
+}
+
+function eventsOnDay(evs,key){
+  return evs.filter(e=>e.start<=key&&(e.end||e.start)>=key).sort((a,b)=>a.start.localeCompare(b.start)||a.name.localeCompare(b.name));
+}
+
+function renderDailyBrief(){
+  const today=todayISO(), tomorrow=shiftISO(today,1);
+  const sections=[['Today',today],['Tomorrow',tomorrow]];
+  const visible=filtered();
+  $('#dailyBrief').innerHTML=sections.map(([title,key])=>{
+    const rows=eventsOnDay(visible,key);
+    return `<div class="brief-day">
+      <div class="brief-head"><strong>${title.toUpperCase()}</strong><span>· ${phtDateLabel(key)}</span><span class="brief-count">${rows.length} event${rows.length===1?'':'s'}</span></div>
+      ${rows.length?rows.slice(0,4).map(e=>{const rs=regStatus(e);return `<button class="brief-event" data-brief-event="${esc(e.id)}"><span class="status-dot" style="background:${evColor(e)}"></span><span class="brief-name">${esc(e.name)}</span><span class="brief-meta">${esc(e.fmt)}</span><span class="reg ${rs.cls}">${esc(rs.short)}</span></button>`}).join(''):'<div class="brief-empty">No matching events scheduled.</div>'}
+    </div>`;
+  }).join('');
+  document.querySelectorAll('[data-brief-event]').forEach(btn=>btn.onclick=()=>selectEvent(data.find(e=>e.id===btn.dataset.briefEvent)));
 }
 
 function evColor(ev){return FMT_COLORS[ev.fmt]||'var(--accent)'}
@@ -407,13 +558,7 @@ function selectEvent(e,expand=false){
 }
 
 function selectedEvent(evs=filtered()){
-  let e=evs.find(x=>x.id===selectedEventId);
-  if(!e){
-    const t=todayISO();
-    e=evs.filter(x=>x.end>=t).sort((a,b)=>a.start.localeCompare(b.start))[0]||evs[0];
-    selectedEventId=e?e.id:'';
-  }
-  return e;
+  return evs.find(x=>x.id===selectedEventId)||null;
 }
 
 function renderMonth(){
@@ -489,7 +634,7 @@ function renderAgenda(){
       <div class="agenda-name"><span class="status-dot" style="background:${evColor(e)}"></span><span>${esc(e.name)}</span></div>
       <div><span class="tag">${esc(e.fmt)}</span></div>
       <div class="agenda-muted">${fmtShort(e.start)}${e.start!==e.end?' – '+fmtShort(e.end):''}</div>
-      <div class="agenda-muted"><i class="ph ph-map-pin" aria-hidden="true"></i> ${esc(e.loc)}</div>
+      <div class="agenda-muted"><i class="ph ph-map-pin" aria-hidden="true"></i> ${venueLink(e)}</div>
       <div><span class="reg ${rs.cls}">${esc(rs.short)}</span></div>`;
     row.onclick=()=>selectEvent(e);
     row.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();selectEvent(e)}};
@@ -501,6 +646,18 @@ function renderAgenda(){
 
 function fmtDate(iso){const d=new Date(iso+'T00:00');return d.toLocaleDateString('default',{month:'short',day:'numeric',year:'numeric'})}
 function fmtShort(iso){const d=new Date(iso+'T00:00');return d.toLocaleDateString('default',{month:'short',day:'numeric'})}
+function venueHref(e){
+  const location=(e.loc||'').trim();
+  if(/^https?:\/\//i.test(location)) return location;
+  if(!location || /online|virtual|remote|global|see event page|zoom|google meet/i.test(location)) return e.url||`https://www.google.com/search?q=${encodeURIComponent((e.name||'Event')+' venue')}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+}
+function venueLink(e){
+  const label=(e.loc||'Venue details').trim();
+  const online=/online|virtual|remote|global|see event page|zoom|google meet/i.test(label);
+  const title=online?'Open online event venue':'Open event venue in Google Maps';
+  return `<a class="venue-link" href="${esc(venueHref(e))}" target="_blank" rel="noopener noreferrer" title="${title}" onclick="event.stopPropagation()">${esc(label)} <i class="ph ph-arrow-square-out" aria-hidden="true"></i></a>`;
+}
 function daysBetween(a,b){return Math.ceil((new Date(a)-new Date(b))/864e5)}
 // Registration status for an event, derived from regOpen/regClose (or start as fallback).
 function regStatus(e){
@@ -543,7 +700,7 @@ function renderList(){
       </div>
       <div style="flex:1">
         <h3>${esc(e.name)}</h3>
-        <div style="color:var(--muted);font-size:13px">${approx(e)}${fmtDate(e.start)}${span} · ${esc(e.loc)}</div>
+        <div style="color:var(--muted);font-size:13px">${approx(e)}${fmtDate(e.start)}${span} · ${venueLink(e)}</div>
         ${e.desc?`<p>${esc(e.desc)}</p>`:''}
         <div class="meta">
           ${(rs=>`<span class="reg ${rs.cls}">${rs.label}</span>`)(regStatus(e))}
@@ -562,43 +719,35 @@ function renderRightRail(){
   const rail=$('#rightRail');
   const evs=filtered().slice().sort((a,b)=>a.start.localeCompare(b.start));
   const e=selectedEvent(evs);
-  if(!e){rail.innerHTML='<div class="empty">Select an event to see its details.</div>';return}
-  const rs=regStatus(e);
-  const currentIndex=evs.findIndex(x=>x.id===e.id);
-  const future=evs.filter(x=>x.end>=todayISO()&&x.id!==e.id);
-  const next=future.find(x=>x.start>=e.end)||future[0];
-  const more=future.filter(x=>!next||x.id!==next.id).slice(0,5);
-  rail.innerHTML=`
-    <button class="rail-close" id="closeRail" aria-label="Hide details"><i class="ph ph-x" aria-hidden="true"></i></button>
-    <div class="eyebrow"><span class="status-dot ${rs.cls==='open'?'good':rs.cls==='soon'?'warn':rs.cls==='closed'?'bad':'cyan'}"></span>${esc(rs.short)}</div>
-    <h2>${esc(e.name)}</h2>
-    <div class="detail-line"><i class="ph ph-calendar-blank" aria-hidden="true"></i><span>${fmtDate(e.start)}${e.start!==e.end?' – '+fmtDate(e.end):''}</span></div>
-    <div class="detail-line"><i class="ph ph-map-pin" aria-hidden="true"></i><span>${esc(e.loc)}</span></div>
-    <div class="detail-line"><i class="ph ph-users" aria-hidden="true"></i><span>${e.eligibility==='Students'?'Students only':'Open to all'}</span></div>
-    ${e.url?`<a class="btn secondary" style="width:100%;color:var(--good);border-color:color-mix(in srgb,var(--good) 50%,var(--line))" href="${esc(e.url)}" target="_blank" rel="noopener">${esc(rs.short)}<i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>`:`<span class="reg ${rs.cls}">${esc(rs.label)}</span>`}
-    ${e.desc?`<p class="detail-copy">${esc(e.desc)}</p>`:''}
-    <div class="detail-tags"><span class="tag">${esc(e.fmt)}</span>${e.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
-    <div class="modal-actions" style="justify-content:flex-start;margin-top:15px"><button class="btn secondary" id="expandDetail"><i class="ph ph-arrows-out" aria-hidden="true"></i>Full details</button><button class="btn secondary" id="railCalendar"><i class="ph ph-calendar-plus" aria-hidden="true"></i>Add to calendar</button></div>
-    <div class="rail-divider"></div>
-    ${next?`<h3>Next opportunity</h3><button class="next-card" id="nextOpportunity" style="width:100%;color:inherit;text-align:left;cursor:pointer"><span class="next-date">${new Date(next.start+'T00:00').toLocaleString('default',{month:'short'}).toUpperCase()}<b>${new Date(next.start+'T00:00').getDate()}</b>${new Date(next.start+'T00:00').toLocaleString('default',{weekday:'short'}).toUpperCase()}</span><span><span class="next-title"><span class="status-dot" style="background:${evColor(next)}"></span> ${esc(next.name)}</span><span class="next-meta">${fmtShort(next.start)}${next.start!==next.end?' – '+fmtShort(next.end):''}<br>${esc(next.loc)}</span></span></button>`:''}
-    ${more.length?`<h3>More upcoming</h3><div>${more.map(x=>`<button class="upcoming-item" data-event-id="${x.id}" style="width:100%;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer"><span class="status-dot" style="background:${evColor(x)}"></span><span>${esc(x.name)}</span><time>${fmtShort(x.start)}</time></button>`).join('')}</div>`:''}
-    <div class="rail-divider"></div>
-    <div class="legend"><span><span class="status-dot good"></span> Open to register</span><span><span class="status-dot warn"></span> Registration closing soon</span><span><span class="status-dot bad"></span> Registration closed</span><span><span class="status-dot cyan"></span> Online</span></div>`;
-  $('#expandDetail').onclick=()=>openDetail(e);
-  $('#railCalendar').onclick=()=>downloadICS(e.id);
+  const today=todayISO();
+  const selectedDay=e?(e.start<=today&&e.end>=today?today:e.start):today;
+  const dayRows=eventsOnDay(evs,selectedDay).slice(0,4);
+  const upcoming=evs.filter(x=>x.end>=today).slice(0,6);
+  const row=x=>{const rs=regStatus(x);return `<button class="rail-event${e&&x.id===e.id?' active':''}" data-event-id="${esc(x.id)}"><span class="rail-event-title"><span class="status-dot" style="background:${evColor(x)}"></span><span>${esc(x.name)}</span></span><span class="rail-event-meta"><span class="tag">${esc(x.fmt)}</span><span>${fmtShort(x.start)}${x.start!==x.end?'–'+fmtShort(x.end):''}</span><span class="reg ${rs.cls}">${esc(rs.short)}</span></span></button>`};
+  rail.innerHTML=`<section class="rail-section">
+      <div class="rail-section-head"><h3>Selected Day</h3><button class="rail-close" id="closeRail" aria-label="Hide agenda"><i class="ph ph-caret-up" aria-hidden="true"></i></button></div>
+      <div class="rail-date">${phtDateLabel(selectedDay)} · ${dayRows.length} event${dayRows.length===1?'':'s'}</div>
+      ${dayRows.length?dayRows.map(row).join(''):'<div class="brief-empty">No matching events.</div>'}
+    </section>
+    <section class="rail-section">
+      <div class="rail-section-head"><h3>Upcoming Events</h3><i class="ph ph-caret-up" aria-hidden="true"></i></div>
+      ${upcoming.length?upcoming.map(row).join(''):'<div class="brief-empty">No upcoming events.</div>'}
+      <button class="btn secondary rail-view-all" id="railViewAll">View all events <i class="ph ph-arrow-right" aria-hidden="true"></i></button>
+    </section>`;
   $('#closeRail').onclick=()=>document.body.classList.add('details-hidden');
-  if(next)$('#nextOpportunity').onclick=()=>selectEvent(next);
-  rail.querySelectorAll('[data-event-id]').forEach(btn=>btn.onclick=()=>selectEvent(evs.find(x=>x.id===btn.dataset.eventId)));
+  $('#railViewAll').onclick=()=>setView('list');
+  rail.querySelectorAll('[data-event-id]').forEach(btn=>{const event=evs.find(x=>x.id===btn.dataset.eventId);btn.onclick=()=>selectEvent(event);btn.ondblclick=()=>openDetail(event)});
 }
 
 function setView(nextView){
   view=nextView;
   $('#viewSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.view===view));
+  document.querySelectorAll('[data-side-view]').forEach(x=>x.classList.toggle('on',x.dataset.sideView===view));
   render();
 }
 
 function render(){
-  renderStats(); renderChips();
+  renderLocationFilter(); renderStats(); renderChips(); renderDailyBrief();
   [['upFilter',upOnly],['openFilter',openOnly],['nonStuFilter',nonStuOnly]].forEach(([id,on])=>{const b=$('#'+id);b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
   $('#monthView').style.display = view==='month'?'':'none';
   $('#listView').style.display = view==='list'?'':'none';
@@ -644,7 +793,7 @@ function renderDetail(){
     ${e.regClose?`<div class="det-row"><span class="k">Reg. deadline</span><span>${fmtDate(e.regClose)}</span></div>`:''}
     <div class="det-row"><span class="k">Who can join</span><span>${e.eligibility==='Students'?'<i class="ph ph-student" aria-hidden="true"></i> Students only':'<i class="ph ph-users" aria-hidden="true"></i> Open to all (non-students welcome)'}</span></div>
     <div class="det-row"><span class="k">Format</span><span><span class="tag fmt" style="background:${evColor(e)}">${e.fmt}</span></span></div>
-    <div class="det-row"><span class="k">Location</span><span>${esc(e.loc)}</span></div>
+    <div class="det-row"><span class="k">Location</span><span>${venueLink(e)}</span></div>
     <div class="det-row"><span class="k">Tech</span><span>${e.tags.map(tg=>`<span class="tag">${tg}</span>`).join(' ')}</span></div>
     ${e.desc?`<div class="det-row"><span class="k">About</span><span>${esc(e.desc)}</span></div>`:''}
     ${e.url?`<div class="det-row"><span class="k">Link</span><a class="link" href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.url)} ↗</a></div>`:''}
@@ -991,7 +1140,7 @@ function runParse(){
     row.innerHTML=`<input type="checkbox" data-i="${i}" checked style="margin-top:3px;accent-color:var(--accent)">
       <div style="flex:1">
         <div style="font-weight:700">${esc(e.name)}</div>
-        <div style="color:var(--muted);font-size:12.5px">${fmtDate(e.start)}${e.start!==e.end?' – '+fmtDate(e.end):''} · ${e.fmt} · ${esc(e.loc)}</div>
+        <div style="color:var(--muted);font-size:12.5px">${fmtDate(e.start)}${e.start!==e.end?' – '+fmtDate(e.end):''} · ${e.fmt} · ${venueLink(e)}</div>
         ${e.tags.length?`<div class="meta">${e.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>`:''}
       </div>`;
     list.appendChild(row);
@@ -1257,17 +1406,39 @@ function applyTheme(th){
     b.setAttribute('aria-label',`Switch to ${next} mode`);
     b.setAttribute('aria-pressed',th==='light');
   }
+  const side=$('#sideThemeBtn');
+  if(side){
+    const next=th==='light'?'dark':'light';
+    side.title=`Switch to ${next} mode`;
+    side.setAttribute('aria-label',`Switch to ${next} mode`);
+    side.setAttribute('aria-pressed',th==='light');
+  }
   const meta=document.querySelector('meta[name="theme-color"]');
   if(meta)meta.content=th==='light'?'#ffffff':'#07111f';
   localStorage.setItem('hackcal.theme',th);
 }
 
+function openTelegramInfo(){
+  modalMode='telegram';
+  $('#modal').innerHTML=`
+    <button class="close" onclick="closeModal()" aria-label="Close"><i class="ph ph-x" aria-hidden="true"></i></button>
+    <div class="eyebrow"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i>Telegram daily brief</div>
+    <h2>Today and tomorrow, every morning</h2>
+    <p style="color:var(--muted);font-size:13px;line-height:1.6">HackCal sends a concise feed of events happening today and tomorrow at <b style="color:var(--txt)">7:30 AM Philippine time</b>. Multi-day events appear on every relevant day.</p>
+    <div class="det-row"><span class="k">Schedule</span><span>Daily · 7:30 AM PHT</span></div>
+    <div class="det-row"><span class="k">Commands</span><span><code>/feed</code> · <code>/today</code> · <code>/tomorrow</code> · <code>/id</code></span></div>
+    <div class="det-row"><span class="k">Coverage</span><span>Live hackathons and tech events · PH, online, or global</span></div>
+    <div class="modal-actions"><button class="btn secondary" onclick="closeModal()">Close</button><button class="btn primary" onclick="closeModal();openLive()"><i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i>Review live sources</button></div>`;
+  showModal();
+}
+
 function resetFilters(tagsOnly=false){
   activeTags.clear();
   if(!tagsOnly){
-    q=''; fmtF=''; srcF=''; upOnly=false; openOnly=false; nonStuOnly=false;
+    q=''; fmtF=''; locF=''; srcF=''; upOnly=false; openOnly=false; nonStuOnly=false;
     $('#search').value='';
     $('#fmtFilter').value='';
+    $('#locFilter').value='';
     $('#srcFilter').value='';
   }
   render();
@@ -1312,9 +1483,12 @@ $('#importBtn').onclick=openImport;
 $('#lumaBtn').onclick=syncLuma;
 $('#syncBtn').onclick=syncDiscord;
 $('#themeBtn').onclick=()=>applyTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');
+$('#sideThemeBtn').onclick=()=>applyTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');
+$('#sideTechToggle').onclick=()=>{sideTechExpanded=!sideTechExpanded;localStorage.setItem(STORE+'.techExpanded',sideTechExpanded?'1':'0');renderChips()};
 $('#icsBtn').onclick=()=>downloadFile('hackcal-all.ics',icsForEvents(filtered()));
 $('#search').oninput=e=>{q=e.target.value;render()};
 $('#fmtFilter').onchange=e=>{fmtF=e.target.value;render()};
+$('#locFilter').onchange=e=>{locF=e.target.value;render()};
 $('#liveBtn').onclick=openLive;
 $('#srcFilter').onchange=e=>{srcF=e.target.value;render()};
 $('#upFilter').onclick=()=>{upOnly=!upOnly;render()};
@@ -1323,6 +1497,20 @@ $('#nonStuFilter').onclick=()=>{nonStuOnly=!nonStuOnly;render()};
 $('#clearFiltersBtn').onclick=()=>resetFilters();
 $('#clearTagsBtn').onclick=()=>resetFilters(true);
 $('#resetFiltersBtn').onclick=()=>resetFilters();
+document.querySelectorAll('[data-side-view]').forEach(b=>b.onclick=()=>setView(b.dataset.sideView));
+document.querySelectorAll('[data-nav-action]').forEach(b=>b.onclick=()=>{
+  const action=b.dataset.navAction;
+  if(action==='import')openImport();
+  if(action==='luma')syncLuma();
+  if(action==='discord')syncDiscord();
+  if(action==='export')downloadFile('hackcal-all.ics',icsForEvents(filtered()));
+});
+document.querySelectorAll('[data-support]').forEach(b=>b.onclick=()=>{
+  if(b.dataset.support==='settings')openLive();
+  if(b.dataset.support==='feedback')toast('Feedback: email team@hackcal.dev');
+  if(b.dataset.support==='help')openTelegramInfo();
+});
+$('#weekHint').onclick=()=>{setView('list');toast('Week-focused planning is available in the chronological List view.')};
 
 const toolsBtn=$('#toolsBtn'), toolsMenu=$('#toolsMenu');
 toolsBtn.onclick=e=>{e.stopPropagation();const show=!toolsMenu.classList.contains('show');toolsMenu.classList.toggle('show',show);toolsBtn.setAttribute('aria-expanded',show)};
@@ -1341,7 +1529,7 @@ document.addEventListener('click',()=>{toolsMenu.classList.remove('show');toolsB
 
 $('#ver').textContent='v3 · '+data.length+' events';
 
-applyTheme(localStorage.getItem('hackcal.theme') || 'dark');
+applyTheme(localStorage.getItem('hackcal.theme') || 'light');
 render();
 
 /* Kick off live sync: fetch once on load, then keep it fresh on the chosen interval. */

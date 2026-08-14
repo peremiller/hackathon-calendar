@@ -1,62 +1,65 @@
-# HackCal Design QA
+# HackCal Merged Redesign — Design QA
 
 ## Comparison Target
 
-- Source visual truth: `/workspace/scratch/7ca906a01249/generated_images/exec-640b8beb-5ffd-4a3a-917f-ee41be067c49.png`
-- Browser-rendered dark implementation: `/workspace/scratch/7ca906a01249/hackathon-calendar/design-qa-dark.jpg`
-- Browser-rendered light implementation: `/workspace/scratch/7ca906a01249/hackathon-calendar/design-qa-light.jpg`
-- Combined full-view evidence: `/workspace/scratch/7ca906a01249/hackathon-calendar/design-qa-comparison.jpg`
+- Source visual truth: `/workspace/scratch/beac8101bac8/generated_images/exec-aa9b8cca-979a-4156-9b1f-fdedef4fe7b3.png`
+- Browser-rendered implementation: `/workspace/scratch/beac8101bac8/hackathon-calendar/design-qa-merged-light.jpg`
+- Combined full-view evidence: `/workspace/scratch/beac8101bac8/hackathon-calendar/design-qa-comparison.jpg`
+- Focused top-workspace evidence: `/workspace/scratch/beac8101bac8/hackathon-calendar/design-qa-focused-top.jpg`
+- Focused calendar evidence: `/workspace/scratch/beac8101bac8/hackathon-calendar/design-qa-focused-calendar.jpg`
 - Source pixels: 1487 × 1058.
-- Implementation pixels: 1363 × 936 in the cloud-browser viewport, device scale factor 1.
-- Comparison normalization: each full view was fit without cropping into a 1200 × 850 comparison slot with equal 20px gutters. No density mismatch was used as a visual finding.
-- State: desktop calendar view, dark mode, September 2026, real seeded HackCal events, Hack the North selected. The source mock uses illustrative August 2026 data; the implementation intentionally keeps the app's real event data and opens the next month containing an event.
+- Implementation pixels: 1348 × 926 in a 1363 × 936 cloud-browser viewport at device scale factor 1. The 15-pixel difference is the visible browser scrollbar.
+- Full-view normalization: each image was fit without cropping into a 1200 × 850 slot with equal background padding, then placed side by side.
+- State: desktop Calendar view, light theme, Friday, August 14, 2026, Philippine Time; no active filters; steady Live Sync state; current day highlighted.
 
 ## Full-View Comparison Evidence
 
-The implementation preserves the source design's three-column hierarchy: narrow filter rail, dominant month calendar and agenda, and contextual event-detail rail. The header, inline metrics, timeline bars, semantic registration colors, action grouping, and restrained dark surfaces follow the selected direction. The implementation also adds the requested equivalent light theme without changing layout or information density.
+The implementation preserves the approved composition: dark navy product navigation, slim action header, metrics and live-status strip, Today/Tomorrow briefing, inline filters and category chips, August 2026 month calendar, and a narrow selected-day/upcoming-events rail. The implementation uses the real HackCal data store, so the approved mock's illustrative event counts and August event density are not fabricated in production.
 
-## Focused Region Evidence
+## Focused Region Comparison Evidence
 
-- Calendar: day cells, explicit grid placement, multi-day event segments, month navigation, selection states, and agenda rows were inspected at the rendered viewport.
-- Header: logo, Calendar/List control, Live Sync, direct integrations, More tools menu, Add Hackathon, and theme switch were inspected.
-- Filter rail: search, format, source, boolean filters, technology filters, live counts, and reset controls were inspected.
-- Detail rail: selection updates, official event link, full-details modal, calendar export control, next opportunity, and upcoming list were inspected.
-- Light mode: the full rendered viewport was captured separately and checked for contrast, borders, event colors, active states, and the unchanged logo/favicon relationship.
+- Top workspace: checked branding, Add Hackathon CTA, Calendar/List switch, import/sync actions, theme controls, stat hierarchy, Telegram 7:30 AM PHT cue, daily briefing, format/location/source filters, and right-rail proportions.
+- Calendar: checked month controls, weekday alignment, day-cell grid, current-day treatment, Month/Week affordance, cell density, borders, and the absence of overflow at the tested viewport.
+- List view: browser-checked separately with all 16 current events, synchronized active navigation, retained filters, registration badges, format/tags, dates, locations, descriptions, and countdowns.
 
 ## Required Fidelity Surfaces
 
-- Fonts and typography: passed. The implementation uses a compact system sans stack with weights, sizes, wrapping, and truncation closely matching the visual target. Small metadata remains readable at the tested viewport.
-- Spacing and layout rhythm: passed. Rail widths, header height, grid density, inline-stat dividers, calendar spacing, and detail hierarchy match the source's overall proportions. The shorter real event names and the browser viewport account for minor content-density differences.
-- Colors and visual tokens: passed. Dark graphite/navy surfaces, cobalt selection, lime registration, cyan online, violet hybrid, neutral borders, and the requested light-theme equivalents are consistently tokenized.
-- Image quality and asset fidelity: passed. The generated HackCal calendar-and-lightning mark is used as the visible logo, favicon, and Apple touch icon. No visible logo or non-standard asset was replaced by CSS or text art. UI controls use the vendored Phosphor icon library.
-- Copy and content: passed. Existing HackCal capabilities and real event content are preserved. Mock-only event names and counts were not introduced as production data.
+- Fonts and typography: passed. The system sans stack, compact UI sizes, numeric hierarchy, metadata weights, truncation, and wrapping closely match the target and remain readable at 100% zoom.
+- Spacing and layout rhythm: passed. Navigation width, header height, overview dividers, briefing split, toolbar density, calendar geometry, and right-rail sections follow the target. The filter row intentionally scrolls inside its own surface at narrower desktop widths rather than forcing page overflow.
+- Colors and visual tokens: passed. Light workspace, dark navy navigation, cobalt selection, cyan live source, green registration, amber/red event markers, borders, and dark-mode equivalents are consistently tokenized with accessible contrast.
+- Image quality and asset fidelity: passed. The existing official HackCal calendar-and-lightning raster is retained as the logo, favicon, and touch icon. Phosphor is used for all UI icons; no visible asset was replaced by handcrafted SVG, CSS art, emoji, or placeholder graphics.
+- Copy and content: passed. Product labels match the approved direction. Mock-only hackathon names and counts were not introduced as production data. The Telegram surface accurately states the 7:30 AM Philippine-time schedule and supported commands.
 
 ## Interaction And Console Verification
 
-- Calendar/List navigation: passed.
-- Technology filter and Clear all: passed.
-- Event selection and contextual details: passed.
 - Add Hackathon modal open/close: passed.
-- Import modal open/close: passed.
-- More tools menu and reset action: passed.
-- Latest upstream Live Sync feature: merged without replacing the redesign. The source selector, header/menu entry points, live metric, modal controls, and `/api/live-events` handler passed targeted DOM, syntax, and isolated-handler checks.
-- Discord not-configured state: passed with a user-facing message.
-- Dark/light mode switching and accessible labels: passed.
-- Browser console: no application errors from `terminal.local`. Observed errors came only from the cloud browser's own `chrome-extension://` metadata script and are unrelated to HackCal.
+- Telegram daily-brief details open/close: passed.
+- Calendar/List switching from the header: passed.
+- Calendar/List switching and synchronized active state from the left navigation: passed.
+- Professional List view with all active event filters: passed.
+- Dedicated location filter populated from current event venues and applied to both Calendar and List views: passed.
+- Venue hyperlinks route physical locations to Google Maps and online venues to their event page: passed.
+- Technology category select/clear plus expandable/collapsible left-navigation filter: passed.
+- Light/dark switching from both header and sidebar: passed.
+- Live Sync, Import, Luma, Discord, export, More tools, and selected-day/upcoming event controls remain wired to the existing flows.
+- Viewport overflow: passed; document scroll width equals client width.
+- Browser console: no HackCal application errors. The only observed message came from the cloud browser's own `chrome-extension://` metadata script.
 
 ## Comparison History
 
-1. Initial browser comparison found a P1 calendar-layout issue: auto-placed day cells were displaced when explicitly positioned event bars shared the same CSS grid.
-2. Fixed by assigning every calendar cell an explicit grid row and column before overlaying event segments.
-3. Post-fix browser evidence shows dates in the correct rows, uninterrupted week structure, and event segments aligned with their dates. No actionable P0, P1, or P2 issues remain.
+1. Initial comparison found a P1 state mismatch: the calendar automatically jumped to September when August had no seeded events, while the approved current-day design showed August 2026.
+2. Fixed by keeping the calendar anchored to the current Philippine month and keeping Selected Day anchored to today until a user chooses an event.
+3. Initial comparison also found a P2 compact-header issue: the Telegram label wrapped too aggressively at the tested desktop width.
+4. Fixed with a compact action-label type rule while retaining the readable schedule metadata.
+5. Re-captured the steady, non-hover Calendar state and recomposed the full and focused evidence. No actionable P0, P1, or P2 mismatch remains.
 
 ## Findings
 
-No actionable P0, P1, or P2 visual or interaction mismatches remain.
+No actionable P0, P1, or P2 visual, interaction, or accessibility mismatch remains.
 
 ## Follow-up Polish
 
-- P3: the source mock shows denser illustrative August data; production intentionally shows the next month containing real seeded events.
-- P3: event names truncate earlier in narrow cross-week segments at the tested viewport. Full names remain available through accessible labels and the detail rail.
+- P3: the approved mock contains illustrative August events and higher counts; production intentionally displays only saved and live-synced source data.
+- P3: the fixed cloud-browser viewport did not expose device emulation. Responsive rules were inspected and desktop overflow was browser-verified, but an additional physical-phone pass can still refine touch density later.
 
 final result: passed
