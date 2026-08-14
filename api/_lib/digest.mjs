@@ -25,10 +25,14 @@ export const defaults = () => ({
   tz: process.env.DIGEST_TZ || 'Asia/Manila'
 });
 
-export const baseUrl = () =>
-  process.env.DIGEST_BASE_URL ||
-  (process.env.VERCEL_ENV === 'production' && process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}` : PROD);
+// Always the stable public alias — never VERCEL_URL.
+//
+// VERCEL_URL is the *generated* deployment URL (…-msd3w9h2s-….vercel.app), and
+// Vercel's Standard Deployment Protection guards those even for production
+// builds; only the production alias is public. Fetching VERCEL_URL therefore
+// returns 401, Live Sync fails, and the digest silently degrades to just the
+// Manila supplement — a message that looks fine but is nearly empty.
+export const baseUrl = () => process.env.DIGEST_BASE_URL || PROD;
 
 /* ---------------- calendar helpers ---------------- */
 // Everything is compared as a YYYY-MM-DD string in the reader's own timezone,
