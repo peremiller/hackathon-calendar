@@ -26,9 +26,9 @@ Friday, Aug 14 · Asia/Manila · scope: hack · region: ph
 
 🔜 Tomorrow — Saturday, Aug 15
 💻 Decentraland Friendzone Mobile Buildathon
-   Online / Virtual · runs to Friday, Sep 4 · Eventbrite
+   🕘 8:00 PM → 8:00 AM your time · Online / Virtual · Eventbrite
 📍 THE DEMO DAY - StellarPH Acceleration Program
-   Cebu City, Philippines · Luma
+   🕘 1:00 PM–5:00 PM · Cebu City, Philippines · Luma
 
 ⏳ Registration closing
 💻 Master Credit Scorecard Development with Python
@@ -37,6 +37,13 @@ Friday, Aug 14 · Asia/Manila · scope: hack · region: ph
 
 Multi-day events that are already under way are included (`since …`), not just
 ones starting today — a hackathon in its second day is still worth knowing about.
+
+**Times** are shown in the event's own timezone, matching the day it's filed
+under, with your local equivalent appended when they differ
+(`8:00 PM → 8:00 AM your time`). An end time appears only for single-day events;
+for a multi-day run the date range already says it. Sources that publish a bare
+date with no clock — most Maven cohorts — simply show no time rather than a
+made-up midnight.
 
 ---
 

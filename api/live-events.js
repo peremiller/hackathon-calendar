@@ -73,10 +73,21 @@ const clean = s => String(s == null ? '' : s).replace(/<[^>]*>/g, ' ').replace(/
   .replace(/\s+/g, ' ').trim();
 const isFuture = e => !e.start || e.start >= new Date(Date.now() - 864e5).toISOString().slice(0, 10);
 
-function mk({ src, extId, name, start, end, fmt, loc, url, desc, hay }) {
+// Does an ISO-ish string carry a clock time, or is it a bare calendar date?
+const hasClock = s => typeof s === 'string' && /T\d{2}:\d{2}/.test(s);
+
+function mk({ src, extId, name, start, end, fmt, loc, url, desc, hay,
+             startAt, endAt, tz, allDay }) {
   name = clean(name).slice(0, 110);
   if (!name || !start) return null;
   return {
+    // startAt/endAt keep the full instant alongside the calendar date, so
+    // consumers can show a time of day; `start`/`end` stay date-only because
+    // the calendar grid and all the filtering key off them.
+    startAt: hasClock(startAt) ? startAt : null,
+    endAt: hasClock(endAt) ? endAt : null,
+    tz: tz || null,
+    allDay: allDay != null ? !!allDay : !hasClock(startAt),
     src, extId, name, start, end: end && end >= start ? end : start,
     fmt: fmt || 'Online', loc: clean(loc).slice(0, 70) || 'See event page',
     url: url || '', desc: clean(desc).slice(0, 260),
@@ -106,6 +117,8 @@ function lumaEvent(entry) {
   return mk({
     src: 'Luma', extId: 'luma:' + e.api_id, name: e.name,
     start: localDate(e.start_at, e.timezone), end: localDate(e.end_at || e.start_at, e.timezone),
+    // Luma timestamps are absolute; the wall-clock time needs e.timezone.
+    startAt: e.start_at, endAt: e.end_at || e.start_at, tz: e.timezone,
     fmt: online ? 'Online' : (place ? 'In-person' : 'Online'),
     loc: online ? 'Online / Virtual' : (place || 'See event page'),
     url: e.url ? 'https://lu.ma/' + e.url : '',
@@ -155,6 +168,9 @@ function schemaEvent(it, src, idPrefix) {
     src, extId: idPrefix + (it.url || it.name), name: it.name,
     start: tz ? localDate(it.startDate, 'UTC') : String(it.startDate || '').slice(0, 10),
     end: it.endDate ? (tz ? localDate(it.endDate, 'UTC') : String(it.endDate).slice(0, 10)) : null,
+    // schema.org dates embed their own offset, so the wall clock is readable
+    // straight off the string — no IANA zone is published to go with it.
+    startAt: it.startDate, endAt: it.endDate || it.startDate, tz: null,
     fmt: online ? 'Online' : (place ? 'In-person' : 'Online'),
     loc: online ? 'Online / Virtual' : (place || 'See event page'),
     url: it.url || '', desc: it.description, hay: place
@@ -235,6 +251,7 @@ async function maven(queries, deadline) {
       name: name + (instr ? ' — ' + clean(instr) : ''),
       start: localDate(ch.start_date, sch.timezone || 'UTC'),
       end: localDate(ch.end_date || ch.start_date, sch.timezone || 'UTC'),
+      startAt: ch.start_date, endAt: ch.end_date || ch.start_date, tz: sch.timezone || null,
       fmt: 'Online', loc: 'Online cohort course',
       url: sch.slug && c.slug ? `https://maven.com/${sch.slug}/${c.slug}` : 'https://maven.com/courses',
       desc: clean(c.description) || `Live cohort course on Maven${instr ? ' with ' + clean(instr) : ''}.`,

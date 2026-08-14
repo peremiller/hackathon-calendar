@@ -170,6 +170,10 @@ export async function fetchManila({ ms = 9000 } = {}) {
       out.push({
         src: 'Luma', extId: 'luma:' + e.api_id, name: clean(e.name).slice(0, 110),
         start: day(e.start_at), end: day(e.end_at || e.start_at),
+        // Mirror live-events.js's time fields, or PH events — the ones this
+        // supplement exists to surface — would be the only ones with no clock.
+        startAt: e.start_at, endAt: e.end_at || e.start_at,
+        tz: e.timezone || null, allDay: false,
         fmt: online ? 'Online' : (place ? 'In-person' : 'Online'),
         loc: online ? 'Online / Virtual' : (place || 'See event page'),
         url: e.url ? 'https://lu.ma/' + e.url : '', desc: '',
@@ -190,15 +194,79 @@ export function dedupe(events) {
   return [...seen.values()];
 }
 
+/* ---------------- times ---------------- */
+// An instant is only convertible to another zone if it says which zone it is
+// in. Luma sends UTC plus a separate IANA zone; schema.org sends an offset in
+// the string itself; Maven often sends a bare date.
+const ABSOLUTE_RE = /(Z|[+-]\d{2}:?\d{2})$/;
+
+const clock = (date, tz) => new Intl.DateTimeFormat('en-US', {
+  timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true
+}).format(date).replace(/ /g, ' ');   // Intl uses a narrow NBSP before AM/PM
+
+// Wall-clock time as the source published it, plus the reader's equivalent when
+// the instant is unambiguous. Returns null for all-day / date-only events.
+export function eventTime(e, readerTz) {
+  const iso = e && e.startAt;
+  if (!iso || e.allDay) return null;
+  const absolute = ABSOLUTE_RE.test(iso);
+  const d = new Date(iso);
+  if (isNaN(d)) return null;
+
+  let local = null;
+  if (e.tz && absolute) {
+    local = clock(d, e.tz);                       // instant + zone → wall clock
+  } else {
+    const m = String(iso).match(/T(\d{2}):(\d{2})/);
+    if (m) {                                      // the string *is* the wall clock
+      let h = +m[1];
+      const ap = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      local = `${h}:${m[2]} ${ap}`;
+    }
+  }
+  if (!local) return null;
+
+  // Same-day end time only; a multi-day range is already stated elsewhere.
+  let end = null;
+  if (e.endAt && e.end === e.start) {
+    const de = new Date(e.endAt);
+    if (!isNaN(de)) {
+      const cand = e.tz && ABSOLUTE_RE.test(e.endAt) ? clock(de, e.tz)
+        : (String(e.endAt).match(/T(\d{2}):(\d{2})/)
+          ? (() => { const m = String(e.endAt).match(/T(\d{2}):(\d{2})/); let h = +m[1];
+              const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return `${h}:${m[2]} ${ap}`; })()
+          : null);
+      if (cand && cand !== local) end = cand;
+    }
+  }
+
+  const reader = absolute ? clock(d, readerTz) : null;
+  return { local, end, reader, differs: !!reader && reader !== local };
+}
+
+export function timeLabel(e, readerTz) {
+  const t = eventTime(e, readerTz);
+  if (!t) return null;
+  let s = t.end ? `${t.local}–${t.end}` : t.local;
+  // Showing the venue's clock keeps it consistent with the day it is filed
+  // under; the reader's clock is what tells them whether they can attend.
+  if (t.differs) s += ` → ${t.reader} your time`;
+  return s;
+}
+
 /* ---------------- rendering ---------------- */
 const FMT_ICON = { Online: '💻', 'In-person': '📍', Hybrid: '🔀' };
 
-function line(e, day) {
+function line(e, day, tz) {
   const icon = FMT_ICON[e.fmt] || '📅';
   const name = e.url
     ? `<a href="${escAttr(e.url)}">${esc(e.name)}</a>`
     : `<b>${esc(e.name)}</b>`;
-  const bits = [`${esc(e.loc)}`];
+  const bits = [];
+  const t = timeLabel(e, tz);
+  if (t) bits.push(`🕘 ${t}`);
+  bits.push(`${esc(e.loc)}`);
   if (e.start > day) bits.push(`starts ${prettyDay(e.start)}`);
   else if (e.end && e.end !== e.start) {
     bits.push(e.start === day ? `runs to ${prettyDay(e.end)}` : `since ${prettyDay(e.start)}`);
@@ -224,7 +292,7 @@ export function render({ today, tomorrow, closing }, meta) {
     L.push('');
     L.push(`<b>${title}</b>`);
     if (!rows.length) { L.push(`<i>${esc(empty)}</i>`); return; }
-    for (const e of rows) L.push(line(e, day));
+    for (const e of rows) L.push(line(e, day, tz));
   };
 
   const headKey = offset === 0 ? '📆 Today' : (offset === 1 ? '🔜 Tomorrow' : '📆');
@@ -237,7 +305,7 @@ export function render({ today, tomorrow, closing }, meta) {
   if (closing.length) {
     L.push('');
     L.push(`<b>⏳ Registration closing</b>`);
-    for (const e of closing) L.push(line(e, todayKey));
+    for (const e of closing) L.push(line(e, todayKey, tz));
   }
 
   L.push('');
