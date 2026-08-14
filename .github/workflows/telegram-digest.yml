@@ -1,0 +1,83 @@
+name: HackCal Telegram digest
+
+# Second, independent trigger for the 07:30 Asia/Manila push.
+#
+# Vercel's own cron (vercel.json) is the primary path, but on the Hobby plan a
+# cron is only guaranteed to fire *within the hour*. GitHub Actions fires much
+# closer to the minute (though it can still drift 5-15 min under load), so this
+# workflow calls the same endpoint as a tighter-timed backup.
+#
+# Sending twice is harmless in the sense that both runs produce the same digest,
+# but you would get two messages. Pick ONE of the two:
+#   - keep vercel.json's "crons" and leave this workflow disabled, or
+#   - delete the "crons" block from vercel.json and enable this workflow.
+# It ships disabled-by-default: the schedule is commented out, so it only runs
+# when you trigger it by hand from the Actions tab.
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   DIGEST_URL     https://hackathon-calendar-umber.vercel.app/api/telegram-digest
+#   CRON_SECRET    the same value set as CRON_SECRET in the Vercel project
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: 'Render only, do not send'
+        type: boolean
+        default: false
+  # Uncomment to enable the daily run. 23:30 UTC = 07:30 Asia/Manila (PH has no DST).
+  # schedule:
+  #   - cron: "30 23 * * *"
+
+concurrency:
+  group: hackcal-digest
+  cancel-in-progress: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger the digest
+        env:
+          DIGEST_URL: ${{ secrets.DIGEST_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DRY: ${{ inputs.dry && '1' || '0' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DIGEST_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::DIGEST_URL and CRON_SECRET repository secrets must both be set."
+            exit 1
+          fi
+          url="$DIGEST_URL"
+          [ "$DRY" = "1" ] && url="${url}?dry=1"
+
+          # --fail-with-body so a 401/500 fails the job *and* still shows why.
+          code=$(curl --silent --show-error --fail-with-body \
+                      --max-time 90 --retry 2 --retry-delay 10 \
+                      --header "Authorization: Bearer ${CRON_SECRET}" \
+                      --output response.json --write-out '%{http_code}' \
+                      "$url") || {
+            echo "::error::Digest endpoint returned HTTP ${code:-000}"
+            cat response.json || true
+            exit 1
+          }
+
+          # The endpoint reports partial delivery failures in the body, so a 200
+          # alone is not proof the message landed.
+          python3 - <<'PY'
+          import json, sys
+          d = json.load(open('response.json'))
+          c = d.get('counts', {})
+          print(f"scope={d.get('scope')} region={d.get('region')} "
+                f"window={d.get('window')} today={c.get('today')} "
+                f"tomorrow={c.get('tomorrow')} closing={c.get('closing')}")
+          if d.get('stale'):
+              print(f"::warning::{d['stale']}")
+          for r in d.get('results', []):
+              if not r.get('ok'):
+                  print(f"::error::chat {r.get('chatId')}: {r.get('error')}")
+          if not d.get('ok') and not d.get('dryRun'):
+              sys.exit(1)
+          print('Digest delivered.')
+          PY

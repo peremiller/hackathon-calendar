@@ -41,6 +41,11 @@ runs entirely in your browser and saves everything to `localStorage`.
   can also paste raw `.ics` text directly. Your feed URL is remembered for
   one-click refresh. **In Luma:** open a calendar → **Subscribe** (or Settings →
   your personal feed) → copy the iCal / webcal link.
+- **Telegram daily digest (optional)** — a bot that messages you the hackathons
+  and tech events running **today and tomorrow**, every morning at 07:30
+  Asia/Manila, and answers `/feed`, `/today` and `/tomorrow` on demand. Scope
+  (hackathons / +tech / everything) and region (PH+online / online / global) are
+  both configurable. See **[TELEGRAM.md](TELEGRAM.md)**.
 - **Stats bar** — total events, upcoming count, online count, and days-to-next.
 - **Private & offline** — all calendar data lives in your browser's
   `localStorage`; nothing is sent anywhere (the optional Discord sync only reads
@@ -111,10 +116,22 @@ Still, always verify exact dates, format, eligibility, and the registration
 deadline on each event's official website before making plans. Add, edit, or
 delete any entry to make the calendar your own.
 
+## Telegram daily digest
+
+An optional bot pushes the events running **today and tomorrow** to Telegram at
+**07:30 Asia/Manila** daily, and answers `/feed`, `/today`, `/tomorrow` any time.
+
+Because the app's events live in your browser's `localStorage`, the bot can't
+read them — it re-runs the same server-side aggregation Live Sync uses and
+narrows it to the next two days. Setup (BotFather, env vars, scheduling options)
+is in **[TELEGRAM.md](TELEGRAM.md)**.
+
 ## Tech
 
-Plain HTML + CSS + vanilla JavaScript in a single file. No frameworks, no build,
-no network calls. Hosted as a static site on Vercel.
+Plain HTML + CSS + vanilla JavaScript in a single file — no frameworks, no build
+step. The front end is self-contained; a handful of small Vercel serverless
+functions under `api/` handle the things a browser can't do cross-origin
+(Discord sync, `.ics` proxying, live event aggregation, and the Telegram bot).
 
 ---
 

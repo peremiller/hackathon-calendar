@@ -2,6 +2,13 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
-    "api/live-events.js": { "maxDuration": 30 }
-  }
+    "api/live-events.js": { "maxDuration": 30 },
+    "api/telegram-digest.js": { "maxDuration": 60 }
+  },
+  "crons": [
+    {
+      "path": "/api/telegram-digest",
+      "schedule": "30 23 * * *"
+    }
+  ]
 }
