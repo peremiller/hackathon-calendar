@@ -240,7 +240,22 @@
   .filter-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
   .filter-toolbar .search-box{flex:1 1 250px;margin:0}
   .filter-toolbar .format-select{height:40px;margin:0;background:var(--panel)}
-  .filter-toolbar #locFilter{flex:1 1 170px;min-width:160px;max-width:230px}
+  .location-picker{position:relative;flex:1 1 170px;min-width:160px;max-width:230px}
+  .filter-toolbar #locFilter{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--txt);cursor:pointer;text-align:left}
+  .filter-toolbar #locFilter:hover{border-color:var(--subtle)}.filter-toolbar #locFilter:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+  .location-trigger-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .location-trigger i{flex:0 0 auto;color:var(--muted)}
+  .location-menu{position:absolute;z-index:45;top:calc(100% + 7px);left:0;width:min(320px,calc(100vw - 32px));max-height:330px;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);box-shadow:var(--shadow);overflow:auto}
+  .location-menu[hidden]{display:none}
+  .location-menu-head{position:sticky;top:-8px;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:7px 7px 9px;background:var(--panel);border-bottom:1px solid var(--line);font-size:11px;font-weight:720;letter-spacing:.35px;text-transform:uppercase}
+  .location-option{width:100%;min-height:36px;display:flex;align-items:center;gap:9px;padding:7px;border:0;border-radius:7px;background:transparent;color:var(--txt);cursor:pointer;text-align:left;font-size:12px}
+  .location-option:hover,.location-option:focus-visible{background:var(--panel2)}
+  .location-option:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  .location-option.on{background:var(--accent-soft);color:var(--accent)}
+  .location-option .location-name{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .location-option .location-count{color:var(--muted);font-variant-numeric:tabular-nums}
+  .location-check{width:16px;height:16px;display:grid;place-items:center;flex:0 0 auto;border:1px solid var(--subtle);border-radius:4px;color:transparent;font-size:11px}
+  .location-option.on .location-check{background:var(--accent);border-color:var(--accent);color:white}
   .filter-toolbar .filter-row{width:auto;min-height:40px;padding:8px 11px;border:1px solid var(--line);background:var(--panel);white-space:nowrap}
   .filter-toolbar .filter-count{display:none}
   .tech-chips{display:flex;gap:7px;margin-top:10px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
@@ -261,6 +276,30 @@
   @media(max-width:1320px){.app-shell{grid-template-columns:214px minmax(0,1fr)}.side-nav{padding-inline:10px}.top-action.utility .btn-label{display:none}.top-action.utility{width:40px;padding-inline:9px}.right-rail{display:none}.app-layout{grid-template-columns:minmax(0,1fr)}}
   @media(max-width:1040px){.app-shell{display:block}.side-nav{position:static;height:auto;display:block;padding:10px 14px}.side-brand{padding:0}.side-brand small,.side-bottom,.side-spacer,.side-tech{display:none}.side-menu{margin-top:10px;flex-direction:row;overflow-x:auto}.side-link{width:auto;min-width:max-content;padding:0 13px}.app-main{width:100%}.filter-toolbar{flex-wrap:nowrap;overflow-x:auto}.filter-toolbar .search-box{min-width:220px}.filter-toolbar .filter-row{display:none}.stats{overflow-x:auto}.stat-today{min-width:280px}}
   @media(max-width:760px){.topbar{height:auto}.bar{padding:10px 12px;flex-wrap:wrap}.bar>.seg{order:3;width:100%;margin:0}.bar>.seg button{flex:1;justify-content:center}.top-actions{margin-left:auto}.top-actions .utility,.menu-wrap{display:none}.app-layout{min-height:0}.workspace{padding-inline:12px}.stats{margin-inline:-12px;padding-inline:12px;min-height:82px}.stat{min-width:92px;padding-inline:13px}.stat-today{min-width:250px}.daily-brief{grid-template-columns:1fr}.brief-day+ .brief-day{border-left:0;border-top:1px solid var(--line)}.filter-toolbar{display:flex;overflow-x:auto}.filter-toolbar .search-box{min-width:250px}.filter-toolbar .format-select{min-width:135px}.calendar-inner{min-width:760px}.cal-head h2{font-size:17px}.view-density{display:none}}
+
+  /* Keep the complete desktop composition visible at normal browser zoom. */
+  @media(min-width:900px) and (max-width:1320px){
+    html,body{height:100%;overflow:hidden}
+    .app-shell{--fit-scale:.78;--fit-width:128.206%;--fit-height:128.206vh;width:var(--fit-width);height:var(--fit-height);min-height:var(--fit-height);display:grid;grid-template-columns:170px minmax(0,1fr);transform:scale(var(--fit-scale));transform-origin:top left}
+    .app-main{width:auto;min-width:0}
+    .side-nav{position:sticky;top:0;height:var(--fit-height);display:flex;flex-direction:column;padding:10px 8px 8px;overflow:auto}
+    .side-brand{gap:8px;padding:0 3px 10px}.side-brand .logo{width:36px;height:36px}.side-brand strong{font-size:17px}.side-brand small{display:block;margin-top:2px;font-size:8px}
+    .side-menu{margin-top:0;display:flex;flex-direction:column;gap:1px;overflow:visible}.side-link{width:100%;min-width:0;min-height:34px;gap:8px;padding:0 8px;font-size:11.5px}.side-link i{font-size:16px}
+    .side-tech{display:block;margin:8px 4px 0;padding-top:7px}.side-tech-header{margin-bottom:0}.side-tech-toggle{min-height:27px;padding:4px;font-size:9.5px}.side-tech-clear{min-height:25px;padding:3px 4px;font-size:9.5px}.side-tech-list{max-height:165px}
+    .side-spacer{display:block;min-height:2px}.side-bottom{display:block;padding-top:6px}.side-theme-row{padding:0 6px 3px}.side-team{margin:4px 3px 0;padding-top:6px}.side-avatar{width:26px;height:26px}.side-team strong{font-size:10.5px}.side-team small{font-size:8.5px}
+    .topbar{height:64px;min-height:64px}.bar{height:64px;min-height:64px;padding:0 12px 0 16px;gap:8px;flex-wrap:nowrap}.bar>.seg{order:initial;width:auto;margin-left:auto}.bar>.seg button{flex:0 0 auto;padding:8px 11px}
+    .top-actions{display:flex;gap:5px;margin-left:auto}.top-actions .utility,.menu-wrap{display:flex}.top-actions .btn,.menu-wrap>.btn{width:auto;min-height:36px;padding:7px 9px;font-size:12px}.top-action.utility{width:auto;padding-inline:9px}.top-action.utility .btn-label,.more-label{display:inline}.btn.primary{width:auto;min-height:36px;padding:7px 12px;font-size:12px}.icon-btn.theme-toggle{width:54px;height:34px}
+    .app-layout{display:grid;grid-template-columns:minmax(0,1fr) 200px;height:calc(var(--fit-height) - 64px);min-height:calc(var(--fit-height) - 64px)}
+    .details-hidden .app-layout{grid-template-columns:minmax(0,1fr)}body:not(.details-hidden) .right-rail{display:block}
+    .workspace{height:calc(var(--fit-height) - 64px);padding:0 16px 20px;overflow:auto}.right-rail{position:sticky;top:64px;height:calc(var(--fit-height) - 64px);padding:0;overflow:auto}
+    .rail-section{padding:12px 12px 10px}.rail-event{padding:7px 0}.rail-event-title{font-size:11px}.rail-event-meta{gap:5px;margin-left:14px;font-size:9px;flex-wrap:wrap}.rail-event-meta .reg{padding:3px 5px;font-size:9px}.rail-view-all{margin-top:7px}
+    .stats{min-height:82px;margin:0 -16px;padding:15px 16px;overflow:visible}.stat{min-width:84px;padding-inline:14px}.stat-today{min-width:240px}.stat.action{min-width:116px;padding-left:14px}
+    .daily-brief{margin:12px 0}.brief-day{padding:12px}.brief-event{min-height:28px}
+    .filter-toolbar{flex-wrap:wrap;overflow:visible}.filter-toolbar .search-box{min-width:220px}.filter-toolbar .filter-row{display:flex}.location-menu{max-height:260px}
+    .card{padding:12px;gap:12px}.date-badge{width:52px}.date-badge .d{font-size:20px}
+  }
+  @media(min-width:1181px) and (max-width:1320px){.app-shell{--fit-scale:.9;--fit-width:111.112%;--fit-height:111.112vh}}
+  @media(min-width:900px) and (max-width:1000px){.app-shell{--fit-scale:.68;--fit-width:147.059%;--fit-height:147.059vh}}
 </style>
 </head>
 <body>
@@ -338,9 +377,13 @@
             <select class="format-select" id="fmtFilter" aria-label="Filter by format">
               <option value="">All formats</option><option value="Online">Online</option><option value="In-person">In-person</option><option value="Hybrid">Hybrid</option>
             </select>
-            <select class="format-select" id="locFilter" aria-label="Filter by event location">
-              <option value="">All locations</option>
-            </select>
+            <div class="location-picker" id="locPicker">
+              <button class="format-select location-trigger" id="locFilter" type="button" aria-label="Filter by event locations" aria-haspopup="listbox" aria-expanded="false" aria-controls="locMenu"><span class="location-trigger-label" id="locFilterLabel">All locations</span><i class="ph ph-caret-down" aria-hidden="true"></i></button>
+              <div class="location-menu" id="locMenu" role="listbox" aria-label="Event locations" aria-multiselectable="true" hidden>
+                <div class="location-menu-head"><span>Select locations</span><button class="text-button" id="clearLocationsBtn" type="button">Clear</button></div>
+                <div id="locOptions"></div>
+              </div>
+            </div>
             <select class="format-select" id="srcFilter" aria-label="Filter by event source">
               <option value="">All sources</option><option value="Luma">Luma</option><option value="Eventbrite">Eventbrite</option><option value="Meetup">Meetup</option><option value="Maven">Maven</option><option value="__manual">Added by me</option>
             </select>
@@ -455,7 +498,8 @@ function save(d){data=d||data; localStorage.setItem(STORE,JSON.stringify(data))}
 let view='month';
 let cur=new Date(); cur.setDate(1);
 let activeTags=new Set();
-let q='', fmtF='', locF='', upOnly=false, openOnly=false, nonStuOnly=false, srcF='';
+let q='', fmtF='', upOnly=false, openOnly=false, nonStuOnly=false, srcF='';
+let activeLocations=new Set();
 let selectedEventId='';
 let sideTechExpanded=localStorage.getItem(STORE+'.techExpanded')!=='0';
 
@@ -464,7 +508,7 @@ function filtered(){
   const t=todayISO();
   return data.filter(ev=>{
     if(fmtF && ev.fmt!==fmtF) return false;
-    if(locF && ev.loc!==locF) return false;
+    if(activeLocations.size && !activeLocations.has((ev.loc||'').trim())) return false;
     if(upOnly && ev.end < t) return false;
     if(openOnly && !isOpenForReg(ev)) return false;
     if(nonStuOnly && ev.eligibility==='Students') return false;
@@ -527,16 +571,24 @@ function renderChips(){
 }
 
 function renderLocationFilter(){
-  const el=$('#locFilter');
+  const trigger=$('#locFilter'), options=$('#locOptions');
   const locations=[...new Set(data.map(e=>(e.loc||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-  const signature=locations.join('\u001f');
-  if(el.dataset.locations!==signature){
-    el.replaceChildren(new Option('All locations',''),...locations.map(location=>new Option(location,location)));
-    el.dataset.locations=signature;
-  }
-  if(locF && !locations.includes(locF)) locF='';
-  el.value=locF;
-  el.title=locF||'All locations';
+  const counts=new Map(locations.map(location=>[location,data.filter(e=>(e.loc||'').trim()===location).length]));
+  [...activeLocations].forEach(location=>{if(!counts.has(location))activeLocations.delete(location)});
+  options.replaceChildren(...locations.map(location=>{
+    const button=document.createElement('button');
+    const selected=activeLocations.has(location);
+    button.type='button'; button.className='location-option'+(selected?' on':'');
+    button.setAttribute('role','option'); button.setAttribute('aria-selected',selected);
+    button.innerHTML=`<span class="location-check"><i class="ph ph-check" aria-hidden="true"></i></span><span class="location-name">${esc(location)}</span><span class="location-count">${counts.get(location)}</span>`;
+    button.onclick=event=>{event.stopPropagation();selected?activeLocations.delete(location):activeLocations.add(location);render()};
+    return button;
+  }));
+  const selected=[...activeLocations].sort((a,b)=>a.localeCompare(b));
+  const label=selected.length===0?'All locations':selected.length===1?selected[0]:`${selected.length} locations`;
+  $('#locFilterLabel').textContent=label;
+  trigger.title=selected.length?selected.join(', '):'All locations';
+  $('#clearLocationsBtn').disabled=selected.length===0;
 }
 
 function eventsOnDay(evs,key){
@@ -1445,10 +1497,9 @@ function openTelegramInfo(){
 function resetFilters(tagsOnly=false){
   activeTags.clear();
   if(!tagsOnly){
-    q=''; fmtF=''; locF=''; srcF=''; upOnly=false; openOnly=false; nonStuOnly=false;
+    q=''; fmtF=''; srcF=''; upOnly=false; openOnly=false; nonStuOnly=false; activeLocations.clear();
     $('#search').value='';
     $('#fmtFilter').value='';
-    $('#locFilter').value='';
     $('#srcFilter').value='';
   }
   render();
@@ -1460,7 +1511,7 @@ function showModal(){$('#modalBg').classList.add('show')}
 function closeModal(){$('#modalBg').classList.remove('show'); modalMode='';}
 $('#modalBg').onclick=e=>{if(e.target===$('#modalBg'))closeModal()};
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeModal();return}
+  if(e.key==='Escape'){closeModal();$('#locMenu').hidden=true;$('#locFilter').setAttribute('aria-expanded','false');return}
   if(modalMode==='detail'){
     if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();navDetail(1)}
     else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();navDetail(-1)}
@@ -1499,7 +1550,9 @@ $('#sideTechClear').onclick=()=>resetFilters(true);
 $('#icsBtn').onclick=()=>downloadFile('hackcal-all.ics',icsForEvents(filtered()));
 $('#search').oninput=e=>{q=e.target.value;render()};
 $('#fmtFilter').onchange=e=>{fmtF=e.target.value;render()};
-$('#locFilter').onchange=e=>{locF=e.target.value;render()};
+$('#locFilter').onclick=event=>{event.stopPropagation();const menu=$('#locMenu'),open=menu.hidden;menu.hidden=!open;$('#locFilter').setAttribute('aria-expanded',open)};
+$('#clearLocationsBtn').onclick=event=>{event.stopPropagation();activeLocations.clear();render()};
+document.addEventListener('click',event=>{if(!$('#locPicker').contains(event.target)){ $('#locMenu').hidden=true; $('#locFilter').setAttribute('aria-expanded','false') }});
 $('#liveBtn').onclick=openLive;
 $('#srcFilter').onchange=e=>{srcF=e.target.value;render()};
 $('#upFilter').onclick=()=>{upOnly=!upOnly;render()};

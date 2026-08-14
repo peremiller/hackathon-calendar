@@ -84,3 +84,27 @@ No actionable P0, P1, or P2 visual, interaction, or accessibility mismatch remai
 No actionable P0, P1, or P2 issue remains from this follow-up.
 
 final result: passed
+
+## 100% Zoom Desktop Fit And Multi-Location Follow-up — August 14, 2026
+
+- Source visual truth: `/workspace/scratch/beac8101bac8/upload/Screenshot 2026-08-14 at 10.25.03 AM.png` (2048 × 958 PNG).
+- Browser-rendered implementation screenshot: cloud-browser emitted image `fitSettledShot` from the open local HackCal preview.
+- Implementation viewport: 1024 × 479 CSS pixels at browser zoom 100%, matching the source image's 2:1 pixel dimensions for comparison.
+- State: desktop List view, Technologies collapsed, no active filters, full navigation and selected-day/upcoming-events rail visible.
+- Comparison evidence: the source and browser-rendered implementation were opened together in the same comparison input. The compact desktop composition measured 132.6 CSS pixels for navigation, 735.4 CSS pixels for the workspace, and 156 CSS pixels for the right rail.
+
+### Follow-up Findings
+
+- Responsive composition: passed. At a 1024 × 479 CSS viewport, the dark left navigation, complete top action bar, metrics, Today/Tomorrow brief, complete filter toolbar, List content, and right details rail remain available without switching to the tablet navigation treatment.
+- Viewport overflow: passed. Document scroll width and client width both measured exactly 1024 CSS pixels.
+- Vertical fit: passed. With Technologies collapsed, the HackCal Team block ends at 472.8 CSS pixels inside the 479-pixel viewport, so the complete sidebar is visible at 100% zoom.
+- List view: passed. Header and left-navigation active states synchronize, Calendar is hidden, and List is displayed after the control is selected.
+- Technologies accordion: passed. The collapsed header remains available in the left navigation and can be expanded without affecting the responsive desktop structure.
+- Multi-location filtering: passed. The location picker exposes a checkbox-style, `aria-multiselectable` listbox. Selecting Cambridge, USA and Espoo, Finland updates the trigger to “2 locations” and limits visible List venues to only those two selected locations.
+- Multi-location accessibility: passed. Selected options report `aria-selected="true"`; Escape closes the menu and resets `aria-expanded`; Clear all restores “All locations,” zero selections, and the complete event set.
+- Visual tokens and asset fidelity: passed. The compact layout reuses the existing HackCal color tokens, Phosphor icons, logo asset, controls, badges, borders, and type hierarchy.
+- Browser interaction: passed. No application exception occurred while switching view, collapsing Technologies, selecting two locations, dismissing the location menu, and clearing filters.
+
+No actionable P0, P1, or P2 issue remains from this follow-up.
+
+final result: passed
