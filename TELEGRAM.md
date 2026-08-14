@@ -60,10 +60,38 @@ everything else, so a Manila run club doesn't land in a hackathons-only feed.
 
 ---
 
+## Menus
+
+Send `/menu` (or `/start`, or tap **⚙️ Options** under any digest) for a button
+interface — no need to remember command syntax:
+
+```
+🚀 HackCal
+Scope: Hackathons only · Region: PH + Online
+
+[ 📆 Today ]        [ 🔜 Tomorrow ]
+[ 🚀 Today + Tomorrow          ]
+[ 🎚 Scope: … ]     [ 🌏 Region: … ]
+[ ❓ Help                      ]
+```
+
+Tapping **Scope** or **Region** opens a picker with the current value ticked;
+choosing one applies it and drops straight back to the menu. Every digest —
+including the 07:30 push — carries **🔄 Refresh · 📆 Today · 🔜 Tomorrow ·
+⚙️ Options**, so you can widen a quiet morning feed without typing anything.
+
+The bot has no datastore, so the menu's state travels inside each button's
+`callback_data` and comes back on the next tap. A consequence worth knowing:
+buttons are self-contained, so an old menu still works, and a menu from before a
+redeploy is answered with *"That menu is out of date — send /menu"* rather than
+failing silently. Taps edit the message in place instead of posting a new one,
+so the chat doesn't fill with dead menus.
+
 ## Bot commands
 
 | Command | Does |
 | --- | --- |
+| `/menu` | Open the button interface |
 | `/feed` | Today + tomorrow, using your defaults |
 | `/feed tech global` | Any scope/region combination, on demand (order doesn't matter) |
 | `/today` | Just today |
@@ -80,16 +108,9 @@ everything else, so a Manila run club doesn't land in a hackathons-only feed.
 1. Message [@BotFather](https://t.me/BotFather) → `/newbot`
 2. Give it a name (`HackCal`) and a username ending in `bot` (`hackcal_feed_bot`)
 3. Copy the token it gives you — looks like `8123456789:AAH...`
-4. Optional, so the command menu autocompletes — send BotFather `/setcommands`,
-   pick your bot, and paste:
 
-   ```
-   feed - Today + tomorrow's events
-   today - Just today
-   tomorrow - Just tomorrow
-   id - Show this chat's id
-   help - How this bot works
-   ```
+The native `/` command list is registered over the API (see step 3 below), so
+there's no need to paste anything into BotFather's `/setcommands`.
 
 ### 2. Set the environment variables on Vercel
 
@@ -116,12 +137,31 @@ openssl rand -hex 32
 webhook (step 3), then send the bot `/id` — it replies with the number. Put that
 in `TELEGRAM_CHAT_ID` and redeploy.
 
-### 3. Register the webhook (once, after deploying)
+### 3. Register the webhook and command list (once, after deploying)
 
 ```bash
 curl -X POST "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
   -H "Content-Type: application/json" \
-  -d '{"url":"https://hackathon-calendar-umber.vercel.app/api/telegram-webhook","secret_token":"<TELEGRAM_WEBHOOK_SECRET>","allowed_updates":["message"]}'
+  -d '{"url":"https://hackathon-calendar-umber.vercel.app/api/telegram-webhook","secret_token":"<TELEGRAM_WEBHOOK_SECRET>","allowed_updates":["message","callback_query"]}'
+```
+
+> ⚠️ **`callback_query` is not optional.** Telegram only delivers the update
+> types listed in `allowed_updates`. Omit it and every menu button will appear
+> to do nothing — the taps are never delivered, so there's no error to see.
+
+Then populate the native `/` command list and the blue Menu button:
+
+```bash
+curl -X POST "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setMyCommands" \
+  -H "Content-Type: application/json" \
+  -d '{"commands":[
+    {"command":"menu","description":"Open the menu"},
+    {"command":"feed","description":"Today + tomorrow'"'"'s events"},
+    {"command":"today","description":"Just today"},
+    {"command":"tomorrow","description":"Just tomorrow"},
+    {"command":"id","description":"Show this chat'"'"'s id"},
+    {"command":"help","description":"How this bot works"}
+  ]}'
 ```
 
 Confirm it took:
@@ -210,6 +250,8 @@ Query overrides on the digest endpoint: `?scope=tech&region=global`.
 | `500 TELEGRAM_CHAT_ID is not set` | No recipients configured — send the bot `/id` |
 | `502` with `results[].error` | Telegram rejected a chat: you never messaged the bot, or it was removed from the group |
 | Bot ignores commands | Webhook not registered, or `TELEGRAM_WEBHOOK_SECRET` mismatch — check `getWebhookInfo` |
+| Buttons do nothing when tapped | `callback_query` missing from the webhook's `allowed_updates` — re-run `setWebhook` above |
+| *"That menu is out of date"* | A menu from before a redeploy whose `callback_data` format changed — send `/menu` |
 | Digest says *Source unavailable* | One upstream (Meetup/Eventbrite) rate-limited that run; the others still reported |
 | Two messages each morning | Both a Vercel cron and an external scheduler are enabled — keep one |
 | Empty feed most days | `scope=hack` + `region=ph` is intentionally narrow; try `/feed tech global` |

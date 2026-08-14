@@ -43,9 +43,10 @@ runs entirely in your browser and saves everything to `localStorage`.
   your personal feed) → copy the iCal / webcal link.
 - **Telegram daily digest (optional)** — a bot that messages you the hackathons
   and tech events running **today and tomorrow**, every morning at 07:30
-  Asia/Manila, and answers `/feed`, `/today` and `/tomorrow` on demand. Scope
-  (hackathons / +tech / everything) and region (PH+online / online / global) are
-  both configurable. See **[TELEGRAM.md](TELEGRAM.md)**.
+  Asia/Manila. Tap-driven **inline menus** (or `/feed`, `/today`, `/tomorrow`)
+  switch scope (hackathons / +tech / everything) and region (PH+online / online
+  / global) on the fly, and every digest carries **Refresh / Today / Tomorrow /
+  Options** buttons. See **[TELEGRAM.md](TELEGRAM.md)**.
 - **Stats bar** — total events, upcoming count, online count, and days-to-next.
 - **Private & offline** — all calendar data lives in your browser's
   `localStorage`; nothing is sent anywhere (the optional Discord sync only reads

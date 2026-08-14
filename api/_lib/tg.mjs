@@ -1,10 +1,10 @@
 // Minimal Telegram Bot API client for HackCal's daily digest bot.
 //
-// Deliberately dependency-free: one POST helper, HTML escaping and message
-// chunking. Telegram hard-caps a message at 4096 characters, and a busy day in
-// "global / all" mode blows straight past that, so send() splits on event
-// boundaries rather than mid-entity (a split inside <b>…</b> is rejected by
-// Telegram with a 400).
+// Deliberately dependency-free: one POST helper, HTML escaping, message
+// chunking, and the few methods the inline menus need. Telegram hard-caps a
+// message at 4096 characters, and a busy day in "global / all" mode blows
+// straight past that, so send() splits on event boundaries rather than
+// mid-entity (a split inside <b>…</b> is rejected by Telegram with a 400).
 
 const API = t => `https://api.telegram.org/bot${t}`;
 const LIMIT = 3900;            // headroom under Telegram's 4096 hard cap
@@ -52,27 +52,63 @@ export function chunk(text, limit = LIMIT) {
   return out;
 }
 
-export async function send(chatId, text, tok = token()) {
+// The keyboard rides on the LAST chunk only — buttons under a mid-thread
+// fragment would sit above the rest of the digest.
+export async function send(chatId, text, { keyboard = null, tok = token() } = {}) {
   const parts = chunk(text);
   const sent = [];
-  for (const part of parts) {
-    sent.push(await call('sendMessage', {
-      chat_id: chatId,
-      text: part,
-      parse_mode: 'HTML',
-      disable_web_page_preview: true
-    }, tok));
+  for (let i = 0; i < parts.length; i++) {
+    const body = {
+      chat_id: chatId, text: parts[i],
+      parse_mode: 'HTML', disable_web_page_preview: true
+    };
+    if (keyboard && i === parts.length - 1) body.reply_markup = { inline_keyboard: keyboard };
+    sent.push(await call('sendMessage', body, tok));
   }
   return sent;
 }
 
+// Editing in place keeps a menu from spamming the chat with copies of itself.
+// Telegram rejects an edit whose text exceeds the cap, and refuses a no-op edit
+// ("message is not modified"), so both fall back to / are treated as success.
+export async function editText(chatId, messageId, text, { keyboard = null, tok = token() } = {}) {
+  if (text.length > LIMIT) {
+    return { fellBack: true, sent: await send(chatId, text, { keyboard, tok }) };
+  }
+  const body = {
+    chat_id: chatId, message_id: messageId, text,
+    parse_mode: 'HTML', disable_web_page_preview: true
+  };
+  if (keyboard) body.reply_markup = { inline_keyboard: keyboard };
+  try {
+    return { edited: await call('editMessageText', body, tok) };
+  } catch (e) {
+    if (/not modified/i.test(String(e.message))) return { unchanged: true };
+    // An edit can also fail because the message is too old to edit; sending a
+    // fresh one is better than the tap appearing to do nothing.
+    return { fellBack: true, sent: await send(chatId, text, { keyboard, tok }) };
+  }
+}
+
+// Every callback_query must be answered or the button shows a spinner forever.
+export async function answerCallback(id, { text = '', tok = token() } = {}) {
+  try {
+    return await call('answerCallbackQuery', { callback_query_id: id, text }, tok);
+  } catch (_) { return null; }   // never let the ack sink the real work
+}
+
+// Populates the native "/" command list and the blue Menu button in the client.
+export async function setMyCommands(commands, { tok = token() } = {}) {
+  return call('setMyCommands', { commands }, tok);
+}
+
 // Broadcast to every configured chat. One bad chat id (user blocked the bot,
 // left the group) must not sink the whole run, so failures are collected.
-export async function broadcast(text, ids = chatIds(), tok = token()) {
+export async function broadcast(text, ids = chatIds(), { keyboard = null, tok = token() } = {}) {
   const results = [];
   for (const id of ids) {
     try {
-      const sent = await send(id, text, tok);
+      const sent = await send(id, text, { keyboard, tok });
       results.push({ chatId: id, ok: true, messages: sent.length });
     } catch (e) {
       results.push({ chatId: id, ok: false, error: String(e.message || e) });

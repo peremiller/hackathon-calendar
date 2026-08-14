@@ -13,6 +13,7 @@
 
 import { buildDigest } from './_lib/digest.mjs';
 import { broadcast, chatIds } from './_lib/tg.mjs';
+import { digestMenu } from './_lib/menu.mjs';
 
 // Constant-time-ish compare; these are short secrets over TLS, but there is no
 // reason to leak length/prefix information through an early return.
@@ -54,7 +55,11 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: 'TELEGRAM_CHAT_ID is not set — nobody to send to' });
     }
 
-    const results = await broadcast(digest.text, ids);
+    // The morning push carries the same controls as an on-demand digest, so a
+    // narrow feed can be widened from the message itself without typing.
+    const results = await broadcast(digest.text, ids, {
+      keyboard: digestMenu(digest.scope, digest.region)
+    });
     const failed = results.filter(r => !r.ok);
     // Report partial failure honestly: a 200 here would tell the scheduler the
     // morning push landed when it did not.
