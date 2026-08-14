@@ -41,9 +41,18 @@ ones starting today — a hackathon in its second day is still worth knowing abo
 **Times** are shown in the event's own timezone, matching the day it's filed
 under, with your local equivalent appended when they differ
 (`8:00 PM → 8:00 AM your time`). An end time appears only for single-day events;
-for a multi-day run the date range already says it. Sources that publish a bare
-date with no clock — most Maven cohorts — simply show no time rather than a
-made-up midnight.
+for a multi-day run the date range already says it.
+
+Time coverage depends on what each source actually publishes:
+
+| Source | Time? | Why |
+| --- | --- | --- |
+| Luma | ✅ | Absolute instant + an IANA timezone |
+| Meetup | ✅ | schema.org `startDate` with an offset |
+| Maven | ✅ | Cohort start timestamp + the school's timezone |
+| Eventbrite | ❌ | Its **search-page** JSON-LD carries a bare date (`2026-10-12`) with no clock — the time only exists on each event's own page, which would cost one request per event |
+
+Events with no published time simply show none, rather than a made-up midnight.
 
 ---
 
