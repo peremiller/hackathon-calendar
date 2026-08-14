@@ -62,4 +62,25 @@ No actionable P0, P1, or P2 visual, interaction, or accessibility mismatch remai
 - P3: the approved mock contains illustrative August events and higher counts; production intentionally displays only saved and live-synced source data.
 - P3: the fixed cloud-browser viewport did not expose device emulation. Responsive rules were inspected and desktop overflow was browser-verified, but an additional physical-phone pass can still refine touch density later.
 
+## Technologies Accordion Follow-up — August 14, 2026
+
+- Source visual truth: `/workspace/scratch/beac8101bac8/upload/Screenshot 2026-08-14 at 10.04.36 AM.png` (518 × 378 PNG).
+- Browser-rendered implementation screenshot: cloud-browser emitted image `finalTechShot` from the open local HackCal preview.
+- Implementation viewport: 1363 × 936 CSS pixels at device scale factor 1; the Technologies panel measures 184 × 337 CSS pixels inside the 214-pixel navigation rail.
+- State: desktop Calendar view, light workspace, Technologies expanded, no selected technology, Clear disabled.
+- Comparison evidence: the source close-up and the browser-rendered implementation were opened together in one comparison input. A focused crop was not required because the complete Technologies header, chevron, Clear action, and first filter rows were readable in the full browser capture.
+
+### Follow-up Findings
+
+- The reference made the section title and Clear action visible but did not expose an expand/collapse affordance. The implementation now adds a prominent up/down chevron, makes the full title area clickable, and preserves Clear as a separate action.
+- Fonts and typography: passed. The all-caps section label, compact filter labels, and Clear hierarchy retain the existing HackCal navigation typography.
+- Spacing and layout rhythm: passed. The new 36-pixel header control fits the existing rail without clipping or moving the filter rows out of alignment.
+- Colors and visual tokens: passed. The control intentionally uses HackCal's dark-navigation tokens instead of copying the source crop's light background.
+- Image quality and asset fidelity: passed. The caret comes from the existing Phosphor icon font; no new raster or placeholder asset was needed.
+- Copy and content: passed. Technologies and Clear match the reference language; accessible labels update to “Expand technology filters” and “Collapse technology filters.”
+- Interaction: passed. Mouse click and Enter key both toggle the panel; `aria-expanded` changes; collapsed state persists after reload; hidden options leave the accessibility tree; selecting a technology enables Clear; Clear removes the selection and disables itself again.
+- Browser console: no HackCal-origin errors were observed. The only logged errors were from the cloud browser's own `chrome-extension://` metadata script.
+
+No actionable P0, P1, or P2 issue remains from this follow-up.
+
 final result: passed

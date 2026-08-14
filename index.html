@@ -170,8 +170,12 @@
   .side-link.on{background:#0e315a;color:#5c8cff;box-shadow:inset 3px 0 0 #3975ff}
   .side-link.on i{color:#5c8cff}
   .side-tech{margin:20px 8px 0;padding-top:16px;border-top:1px solid #18334f}
-  .side-tech-toggle{width:100%;display:flex;align-items:center;gap:8px;padding:6px 4px 9px;border:0;background:transparent;color:#91a8bd;cursor:pointer;font-size:10.5px;font-weight:780;letter-spacing:.45px;text-align:left;text-transform:uppercase}
-  .side-tech-toggle span{flex:1}.side-tech-toggle i{font-size:14px;transition:transform .16s}.side-tech-toggle[aria-expanded="false"] i{transform:rotate(-90deg)}
+  .side-tech-header{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+  .side-tech-toggle{min-width:0;min-height:36px;display:flex;flex:1;align-items:center;gap:8px;padding:6px 7px;border:0;border-radius:7px;background:transparent;color:#91a8bd;cursor:pointer;font-size:10.5px;font-weight:780;letter-spacing:.45px;text-align:left;text-transform:uppercase}
+  .side-tech-toggle span{flex:1}.side-tech-toggle i{font-size:18px;color:#c5d2df;transition:transform .16s ease}.side-tech-toggle[aria-expanded="false"] i{transform:rotate(180deg)}
+  .side-tech-toggle:hover,.side-tech-toggle:focus-visible{background:#0d2948;color:#f7fbff}.side-tech-toggle:focus-visible,.side-tech-clear:focus-visible{outline:2px solid #6e99ff;outline-offset:2px}
+  .side-tech-clear{min-height:32px;padding:4px 7px;border:0;border-radius:6px;background:transparent;color:#91a8bd;cursor:pointer;font-size:10.5px;font-weight:680}
+  .side-tech-clear:hover:not(:disabled),.side-tech-clear:focus-visible:not(:disabled){background:#0d2948;color:#f7fbff}.side-tech-clear:disabled{opacity:.42;cursor:default}
   .side-tech-list{display:flex;flex-direction:column;gap:3px;max-height:280px;overflow:auto;padding-right:3px;scrollbar-width:thin}
   .side-tech-list[hidden]{display:none}
   .side-tech-chip{width:100%;min-height:31px;display:flex;align-items:center;gap:8px;padding:5px 7px;border:0;border-radius:6px;background:transparent;color:#afbed0;cursor:pointer;font-size:11px;text-align:left}
@@ -275,9 +279,12 @@
       <button class="side-link" data-nav-action="discord"><i class="ph ph-discord-logo" aria-hidden="true"></i>Sync Discord</button>
       <button class="side-link" data-nav-action="export"><i class="ph ph-download-simple" aria-hidden="true"></i>Export .ics</button>
     </nav>
-    <section class="side-tech" aria-label="Technology filters">
-      <button class="side-tech-toggle" id="sideTechToggle" type="button" aria-expanded="true" aria-controls="sideTechFilters"><span>Technologies</span><i class="ph ph-caret-down" aria-hidden="true"></i></button>
-      <div class="side-tech-list" id="sideTechFilters"></div>
+    <section class="side-tech" aria-labelledby="sideTechTitle">
+      <div class="side-tech-header">
+        <button class="side-tech-toggle" id="sideTechToggle" type="button" aria-expanded="true" aria-controls="sideTechFilters"><span id="sideTechTitle">Technologies</span><i class="ph ph-caret-up" aria-hidden="true"></i></button>
+        <button class="side-tech-clear" id="sideTechClear" type="button">Clear</button>
+      </div>
+      <div class="side-tech-list" id="sideTechFilters" role="group" aria-label="Technology options"></div>
     </section>
     <div class="side-spacer"></div>
     <div class="side-bottom">
@@ -513,6 +520,9 @@ function renderChips(){
     side.appendChild(s);
   });
   $('#sideTechToggle').setAttribute('aria-expanded',sideTechExpanded);
+  $('#sideTechToggle').setAttribute('aria-label',`${sideTechExpanded?'Collapse':'Expand'} technology filters`);
+  $('#sideTechToggle').title=`${sideTechExpanded?'Collapse':'Expand'} technology filters`;
+  $('#sideTechClear').disabled=activeTags.size===0;
   side.hidden=!sideTechExpanded;
 }
 
@@ -1485,6 +1495,7 @@ $('#syncBtn').onclick=syncDiscord;
 $('#themeBtn').onclick=()=>applyTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');
 $('#sideThemeBtn').onclick=()=>applyTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');
 $('#sideTechToggle').onclick=()=>{sideTechExpanded=!sideTechExpanded;localStorage.setItem(STORE+'.techExpanded',sideTechExpanded?'1':'0');renderChips()};
+$('#sideTechClear').onclick=()=>resetFilters(true);
 $('#icsBtn').onclick=()=>downloadFile('hackcal-all.ics',icsForEvents(filtered()));
 $('#search').oninput=e=>{q=e.target.value;render()};
 $('#fmtFilter').onchange=e=>{fmtF=e.target.value;render()};
