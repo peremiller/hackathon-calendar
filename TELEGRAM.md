@@ -5,8 +5,8 @@ A daily **07:30 Asia/Manila** push of the hackathons and tech events running
 
 The web app keeps its events in `localStorage`, which a cron job can never read,
 so the bot re-runs the same server-side aggregation the app's 🌐 Live Sync uses
-(`/api/live-events` → Luma, Eventbrite, Meetup, Maven) and narrows it to the next
-two calendar days.
+(`/api/live-events` → Luma, Eventbrite, Meetup, Maven and public Substack
+tech-event feeds) and narrows it to the next two calendar days.
 
 > The 16 built-in seed hackathons are deliberately **excluded**. Their dates are
 > illustrative ("typical next edition", shown with a `≈` in the app), and an
@@ -18,7 +18,7 @@ two calendar days.
 
 ```
 🚀 HackCal — daily feed
-Friday, Aug 14 · Asia/Manila · scope: hack · region: ph
+Friday, Aug 14 · Asia/Manila · scope: tech · region: ph
 
 📆 Today — Friday, Aug 14
 💻 AI Product Management Bootcamp — Dr. Marily Nika
@@ -50,6 +50,7 @@ Time coverage depends on what each source actually publishes:
 | Luma | ✅ | Absolute instant + an IANA timezone |
 | Meetup | ✅ | schema.org `startDate` with an offset |
 | Maven | ✅ | Cohort start timestamp + the school's timezone |
+| Substack | When listed | Publication issues sometimes include a time; date-only listings stay date-only |
 | Eventbrite | ❌ | Its **search-page** JSON-LD carries a bare date (`2026-10-12`) with no clock — the time only exists on each event's own page, which would cost one request per event |
 
 Events with no published time simply show none, rather than a made-up midnight.
@@ -62,8 +63,8 @@ Both default from env vars and can be overridden per-command.
 
 | Dial | Values | Meaning |
 | --- | --- | --- |
-| `scope` | `hack` *(default)* | Hackathons, jams, CTFs, demo days + Maven cohorts |
-| | `tech` | The above plus general tech meetups and conferences |
+| `scope` | `hack` | Hackathons, jams, CTFs, demo days + Maven cohorts |
+| | `tech` *(default)* | The above plus general tech meetups, conferences and Substack tech events |
 | | `all` | No relevance filtering — everything Live Sync returns |
 | `region` | `ph` *(default)* | Online/hybrid events **plus** anything physically in the Philippines |
 | | `online` | Online/hybrid only |
@@ -83,7 +84,7 @@ interface — no need to remember command syntax:
 
 ```
 🚀 HackCal
-Scope: Hackathons only · Region: PH + Online
+Scope: All tech events · Region: PH + Online
 
 [ 📆 Today ]        [ 🔜 Tomorrow ]
 [ 🚀 Today + Tomorrow          ]
@@ -138,7 +139,8 @@ Project → Settings → Environment Variables (Production):
 | `TELEGRAM_CHAT_ID` | ✅ | Your chat id — comma-separate for several chats |
 | `CRON_SECRET` | ✅ | Any long random string; protects the push endpoint |
 | `TELEGRAM_WEBHOOK_SECRET` | ✅ | Another random string; protects the webhook |
-| `DIGEST_SCOPE` | – | `hack` (default) \| `tech` \| `all` |
+| `DIGEST_SCOPE` | – | `tech` (default) \| `hack` \| `all` |
+| `SUBSTACK_FEEDS` | – | Extra public Substack RSS feeds; comma/newline-separated, optionally `Name\|URL\|Location` |
 | `DIGEST_REGION` | – | `ph` (default) \| `online` \| `global` |
 | `DIGEST_TZ` | – | `Asia/Manila` (default) |
 | `DIGEST_BASE_URL` | – | Override the origin the digest reads Live Sync from |

@@ -1,6 +1,6 @@
 // Vercel serverless function: live event aggregator for HackCal.
 //
-//   GET /api/live-events?q=hackathon&sources=luma,eventbrite,meetup,maven
+//   GET /api/live-events?q=hackathon&sources=luma,eventbrite,meetup,maven,substack
 //
 // Fans out to every requested source in parallel, normalises each result into
 // HackCal's event shape and returns them de-duplicated, newest-first.
@@ -10,11 +10,14 @@
 //   eventbrite ✅ public search pages embed schema.org JSON-LD ItemList of Events
 //   meetup     ✅ /find/?source=EVENTS embeds a schema.org JSON-LD Event array
 //   maven      ✅ maven.com/courses embeds __NEXT_DATA__ with each course's next live cohort
+//   substack   ✅ public publication RSS feeds, parsed into the events listed inside each issue
 //   linkedin   ❌ every events URL 307s to the auth wall — no logged-out access, no public API
 //   facebook   ❌ event pages render a login gate; Graph API dropped public event search in 2018
 //
 // The two blocked sources are reported honestly in `sources[]` with a search URL
 // the user can open themselves, rather than silently returning nothing.
+
+import { fetchSubstackEvents } from './_lib/substack.mjs';
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 const BUDGET_MS = 12000;  // overall wall-clock budget; partial results beat a timeout
@@ -71,7 +74,12 @@ function localDate(iso, tz) {
 const clean = s => String(s == null ? '' : s).replace(/<[^>]*>/g, ' ').replace(/&amp;/g, '&')
   .replace(/&#39;|&rsquo;/g, "'").replace(/&quot;/g, '"').replace(/&nbsp;/g, ' ')
   .replace(/\s+/g, ' ').trim();
-const isFuture = e => !e.start || e.start >= new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+export const manilaDateKey = (date = new Date()) => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit'
+}).format(date);
+// Keep an event while it is still running. Filtering by start date would drop a
+// multi-day event on its final day, even though it is current and actionable.
+export const isCurrentOrFuture = (e, today = manilaDateKey()) => !e.end || e.end >= today;
 
 // Does an ISO-ish string carry a clock time, or is it a bare calendar date?
 const hasClock = s => typeof s === 'string' && /T\d{2}:\d{2}/.test(s);
@@ -266,6 +274,15 @@ async function maven(queries, deadline) {
   return out;
 }
 
+/* ================= SUBSTACK ================= */
+// Public publication feeds are the supported account-independent integration.
+// A reader's personalised Substack Home feed is private and is intentionally
+// not scraped or authenticated with browser cookies. Extra public feeds can be
+// configured through SUBSTACK_FEEDS; see README.md.
+async function substack(_queries, deadline) {
+  return fetchSubstackEvents({ grab, deadline });
+}
+
 /* ================= relevance ================= */
 // The category sweeps (Luma's whole "tech" feed, Meetup's keyword pages) drag in
 // art swaps and picnics alongside real build events, so every event is classified
@@ -304,18 +321,18 @@ const WALLED = {
 };
 
 /* ================= handler ================= */
-const ADAPTERS = { luma, eventbrite, meetup, maven };
+const ADAPTERS = { luma, eventbrite, meetup, maven, substack };
 
 export default async function handler(req, res) {
   const p = (req.query || {});
   const first = v => Array.isArray(v) ? v[0] : v;
 
-  const queries = String(first(p.q) || 'hackathon')
+  const queries = String(first(p.q) || 'hackathon,ai,developer,startup')
     .split(',').map(s => s.trim()).filter(Boolean).slice(0, 4);
-  const want = String(first(p.sources) || 'luma,eventbrite,meetup,maven')
+  const want = String(first(p.sources) || 'luma,eventbrite,meetup,maven,substack')
     .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   const limit = Math.min(Math.max(parseInt(first(p.limit), 10) || 400, 1), 1000);
-  const keep = KEEP[String(first(p.filter) || 'hack').toLowerCase()] || KEEP.hack;
+  const keep = KEEP[String(first(p.filter) || 'tech').toLowerCase()] || KEEP.tech;
   const deadline = Date.now() + BUDGET_MS;
 
   const sources = [];
@@ -348,7 +365,7 @@ export default async function handler(req, res) {
   // de-dupe on name+date (an event cross-posted to Luma and Eventbrite is one event)
   const seen = new Map();
   for (const e of all) {
-    if (!isFuture(e)) continue;
+    if (!isCurrentOrFuture(e)) continue;
     e.kind = classify(e);
     if (!keep(e.kind)) continue;
     const k = e.name.toLowerCase().replace(/[^a-z0-9]/g, '') + '|' + e.start;

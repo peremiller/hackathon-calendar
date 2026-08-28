@@ -385,7 +385,7 @@
               </div>
             </div>
             <select class="format-select" id="srcFilter" aria-label="Filter by event source">
-              <option value="">All sources</option><option value="Luma">Luma</option><option value="Eventbrite">Eventbrite</option><option value="Meetup">Meetup</option><option value="Maven">Maven</option><option value="__manual">Added by me</option>
+              <option value="">All sources</option><option value="Luma">Luma</option><option value="Eventbrite">Eventbrite</option><option value="Meetup">Meetup</option><option value="Maven">Maven</option><option value="Substack">Substack</option><option value="__manual">Added by me</option>
             </select>
             <button class="filter-row" id="upFilter" aria-pressed="false"><span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">Upcoming only</span><span class="filter-count" id="upCount">0</span></button>
             <button class="filter-row good" id="openFilter" aria-pressed="false"><span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">Open to register</span><span class="filter-count" id="openCount">0</span></button>
@@ -434,15 +434,13 @@ const phtDateLabel=iso=>new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',
 
 /* ---- seed data (illustrative recurring tech hackathons, dated forward) ---- */
 function seed(){
-  const Y=new Date().getFullYear();
-  const iso=dt=>`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+  const today=todayISO(), Y=+today.slice(0,4);
   const mk=(name,m,d,len,fmt,loc,tags,url,desc,conf,elig)=>{
-    let yr=Y; const start=new Date(Y,m-1,d);
-    if(start < new Date(new Date().toDateString())) yr=Y+1;
+    let yr=Y;
+    if(`${Y}-${pad(m)}-${pad(d)}` < today) yr=Y+1;
     const s=`${yr}-${pad(m)}-${pad(d)}`;
-    const e=new Date(yr,m-1,d+len-1);
-    const rc=new Date(yr,m-1,d-4);                // registration closes ~4 days before start
-    return {id:uid(),name,start:s,end:iso(e),regClose:iso(rc),fmt,loc,tags,url,desc,dateConf:conf||'typical',eligibility:elig||'Everyone',seed:true};
+    return {id:uid(),name,start:s,end:shiftISO(s,len-1),regClose:shiftISO(s,-4),
+      fmt,loc,tags,url,desc,dateConf:conf||'typical',eligibility:elig||'Everyone',seed:true};
   };
   return [
     mk('MLH Global Hack Week',7,13,7,'Online','Global / Virtual',['AI/ML','Open Source','DevTools'],'https://ghw.mlh.com/','Major League Hacking’s beginner-friendly week-long online event (successor to Local Hack Day).','typical','Everyone'),
@@ -477,6 +475,18 @@ const KNOWN_SEED_NAMES=new Set([
   'PennApps','Hacktoberfest','MIT Reality Hack'
 ]);
 const isSeedRow=e=>e.seed===true || (!e.src && KNOWN_SEED_NAMES.has(e.name));
+function rollPastSeeds(rows){
+  const today=todayISO(), fresh=new Map(seed().map(e=>[e.name,e]));
+  let changed=false;
+  const next=rows.map(e=>{
+    if(!isSeedRow(e)||!e.end||e.end>=today) return e;
+    const replacement=fresh.get(e.name); if(!replacement) return e;
+    changed=true;
+    return Object.assign({},e,{start:replacement.start,end:replacement.end,regClose:replacement.regClose});
+  });
+  if(changed) save(next);
+  return next;
+}
 let data;
 data = load();
 function load(){
@@ -490,7 +500,10 @@ function load(){
     const merged=seed().concat(userRows);
     localStorage.setItem(VERKEY,SEED_VER); save(merged); return merged;
   }
-  return v;
+  // Recurring built-ins are rolled to their next occurrence on every load.
+  // This keeps "upcoming" tied to today's PHT date even across year boundaries
+  // without touching user-added/imported events.
+  return rollPastSeeds(v);
 }
 function save(d){data=d||data; localStorage.setItem(STORE,JSON.stringify(data))}
 
@@ -1219,7 +1232,7 @@ function confirmImport(){
 
 /* ================= LIVE SYNC =================
    Pulls real, current listings from /api/live-events (Luma, Eventbrite, Meetup,
-   Maven) and upserts them by their source id, so re-syncing refreshes an event's
+   Maven and public Substack tech-event feeds) and upserts them by source id, so re-syncing refreshes an event's
    dates instead of piling up duplicates. LinkedIn and Facebook can't be fetched
    server-side (both hard-gate signed-out visitors), so they're surfaced in the
    panel with a search link and the paste-import path instead. */
@@ -1229,15 +1242,28 @@ const LIVE_SOURCES=[
   {id:'eventbrite',label:'Eventbrite', icon:'ph-ticket', live:true},
   {id:'meetup',    label:'Meetup',     icon:'ph-users-three', live:true},
   {id:'maven',     label:'Maven',      icon:'ph-graduation-cap', live:true, note:'live cohort courses'},
+  {id:'substack',  label:'Substack',   icon:'ph-newspaper', live:true, note:'public tech-event publications'},
   {id:'linkedin',  label:'LinkedIn',   icon:'ph-linkedin-logo', live:false},
   {id:'facebook',  label:'Facebook',   icon:'ph-facebook-logo', live:false}
 ];
-const SRC_ICONS={Luma:'ph-link',Eventbrite:'ph-ticket',Meetup:'ph-users-three',Maven:'ph-graduation-cap',Discord:'ph-discord-logo',WhatsApp:'ph-whatsapp-logo'};
+const SRC_ICONS={Luma:'ph-link',Eventbrite:'ph-ticket',Meetup:'ph-users-three',Maven:'ph-graduation-cap',Substack:'ph-newspaper',Discord:'ph-discord-logo',WhatsApp:'ph-whatsapp-logo'};
 const srcIcon=s=>`<i class="ph ${SRC_ICONS[s]||'ph-arrow-square-in'}" aria-hidden="true"></i>`;
 
-const LIVE_DEFAULTS={sources:['luma','eventbrite','meetup','maven'],filter:'hack',q:'hackathon',auto:15,lastSync:null,report:null};
+const LIVE_DEFAULTS={schema:2,sources:['luma','eventbrite','meetup','maven','substack'],filter:'tech',q:'hackathon,ai,developer,startup',auto:5,lastSync:null,report:null};
 function liveCfg(){
   let c={}; try{c=JSON.parse(localStorage.getItem(LIVE_KEY))||{}}catch(e){}
+  // Existing installs saved the old hackathon-only defaults in localStorage.
+  // Migrate that untouched default once so Substack and all-tech coverage show
+  // up for returning users, while preserving genuinely customised settings.
+  if((+c.schema||0)<LIVE_DEFAULTS.schema){
+    const oldDefault=(!c.q||c.q==='hackathon')&&(!c.filter||c.filter==='hack');
+    const sources=Array.isArray(c.sources)?[...c.sources]:[...LIVE_DEFAULTS.sources];
+    if(!sources.includes('substack')) sources.push('substack');
+    c=Object.assign({},c,{schema:LIVE_DEFAULTS.schema,sources});
+    if(oldDefault){c.filter=LIVE_DEFAULTS.filter;c.q=LIVE_DEFAULTS.q;c.auto=LIVE_DEFAULTS.auto}
+    else if(c.auto==null||+c.auto===15)c.auto=LIVE_DEFAULTS.auto;
+    localStorage.setItem(LIVE_KEY,JSON.stringify(c));
+  }
   return Object.assign({},LIVE_DEFAULTS,c);
 }
 function saveLiveCfg(patch){
@@ -1305,9 +1331,9 @@ async function liveSync(silent){
   const btn=$('#liveBtn'), orig=btn?btn.innerHTML:'';
   if(btn){btn.innerHTML='<i class="ph ph-spinner-gap" aria-hidden="true"></i><span class="btn-label">Syncing…</span>'; btn.disabled=true;}
   try{
-    const url='/api/live-events?q='+encodeURIComponent(cfg.q||'hackathon')+
+    const url='/api/live-events?q='+encodeURIComponent(cfg.q||LIVE_DEFAULTS.q)+
       '&sources='+encodeURIComponent(cfg.sources.join(','))+
-      '&filter='+encodeURIComponent(cfg.filter||'hack')+'&_='+Date.now();
+      '&filter='+encodeURIComponent(cfg.filter||LIVE_DEFAULTS.filter)+'&_='+Date.now();
     const r=await fetch(url);
     const j=await r.json().catch(()=>({}));
     if(r.status===404){ if(!silent) toast('Live sync needs the /api/live-events function — deploy the app to Vercel to enable it.'); return; }
@@ -1401,7 +1427,7 @@ function openLive(){
       </div>
     </div>
     <div class="field"><label>Search terms (comma-separated)</label>
-      <input id="live_q" value="${esc(c.q||'hackathon')}" placeholder="hackathon, game jam, ctf"></div>
+      <input id="live_q" value="${esc(c.q||LIVE_DEFAULTS.q)}" placeholder="hackathon, AI, developer, startup"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">Close</button>
       <button class="btn primary" onclick="saveLiveAndSync()"><i class="ph ph-arrows-clockwise" aria-hidden="true"></i>Sync now</button>
@@ -1413,7 +1439,7 @@ function saveLiveAndSync(){
     sources:[...document.querySelectorAll('.live-src:checked')].map(c=>c.value),
     filter:$('#live_filter').value,
     auto:+$('#live_auto').value,
-    q:$('#live_q').value.trim()||'hackathon'
+    q:$('#live_q').value.trim()||LIVE_DEFAULTS.q
   });
   startAutoSync();
   liveSync(false);

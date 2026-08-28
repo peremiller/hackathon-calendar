@@ -20,7 +20,7 @@ export const SCOPES = ['hack', 'tech', 'all'];
 export const REGIONS = ['ph', 'online', 'global'];
 
 export const defaults = () => ({
-  scope: SCOPES.includes(process.env.DIGEST_SCOPE) ? process.env.DIGEST_SCOPE : 'hack',
+  scope: SCOPES.includes(process.env.DIGEST_SCOPE) ? process.env.DIGEST_SCOPE : 'tech',
   region: REGIONS.includes(process.env.DIGEST_REGION) ? process.env.DIGEST_REGION : 'ph',
   tz: process.env.DIGEST_TZ || 'Asia/Manila'
 });

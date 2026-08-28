@@ -32,6 +32,14 @@ runs entirely in your browser and saves everything to `localStorage`.
 - **Discord auto-sync (optional)** — the **🔄 Sync Discord** button pulls recent
   messages from a Discord channel via a tiny Vercel serverless function and
   parses them into events. See setup below.
+- **Substack tech-event sync** — Live Sync reads the official public RSS feeds
+  of active tech-event publications, extracts the individual dated events
+  listed inside each issue, and de-duplicates them against the other sources.
+  Substack is enabled by default for both the web calendar and Telegram bot.
+- **Current-date live population** — event status and every "upcoming" view use
+  today's Philippine calendar date. Live Sync runs on first load, refreshes
+  automatically every five minutes, and catches up when a stale tab regains
+  focus. Multi-day events remain current through their end date.
 - **Luma & calendar (.ics) import** — the **🔗 Luma** button (and the Import
   dialog's "Luma / calendar feed" source) pulls events from a
   [Luma](https://lu.ma) subscription feed or any iCalendar (`.ics`) URL —
@@ -48,9 +56,29 @@ runs entirely in your browser and saves everything to `localStorage`.
   / global) on the fly, and every digest carries **Refresh / Today / Tomorrow /
   Options** buttons. See **[TELEGRAM.md](TELEGRAM.md)**.
 - **Stats bar** — total events, upcoming count, online count, and days-to-next.
-- **Private & offline** — all calendar data lives in your browser's
-  `localStorage`; nothing is sent anywhere (the optional Discord sync only reads
-  from Discord, server-side).
+- **Private & offline-friendly** — your saved calendar lives in browser
+  `localStorage`; optional Live Sync sources are read server-side and only the
+  normalized public event listings are returned to the browser.
+
+## Substack tech-event sync
+
+HackCal uses Substack's documented public-publication RSS convention
+(`https://publication.substack.com/feed`). It includes a curated default set of
+active global, regional and Philippine tech-event publications. A reader's
+personalised Home/Activity feed is account-private and is not scraped or given
+browser cookies.
+
+To add more public Substack publications, set `SUBSTACK_FEEDS` in Vercel. It
+accepts comma- or newline-separated feed URLs. You can optionally include a
+display name and fallback location:
+
+```text
+Metro Tech|https://example.substack.com/feed|Metro Manila, Philippines
+```
+
+Only HTTPS `substack.com` publication feeds are accepted. Live Sync defaults to
+**All tech events** and returning browsers are migrated from the prior untouched
+hackathon-only default without overwriting custom source/filter settings.
 
 ## Discord auto-sync setup (optional)
 
