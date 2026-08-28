@@ -1,4 +1,5 @@
-import { buildCalendar, futureStartingEvents } from './_lib/calendar.mjs';
+import { buildCalendar, futureStartingEvents, uniqueEvents } from './_lib/calendar.mjs';
+import { hackCalSeedEvents } from './_lib/seeds.mjs';
 import { collectLiveEvents, manilaDateKey } from './live-events.js';
 
 export default async function handler(req, res) {
@@ -14,7 +15,11 @@ export default async function handler(req, res) {
       filter: 'tech',
       limit: '1000',
     });
-    const events = futureStartingEvents(payload.events, manilaDateKey());
+    const today = manilaDateKey();
+    const events = futureStartingEvents(
+      uniqueEvents([...payload.events, ...hackCalSeedEvents(today)]),
+      today,
+    );
     const calendar = buildCalendar(events, {
       name: 'HackCal + Substack Tech Events',
       generatedAt: payload.fetchedAt,

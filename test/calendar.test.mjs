@@ -6,7 +6,9 @@ import {
   buildCalendar,
   futureStartingEvents,
   startsTodayOrLater,
+  uniqueEvents,
 } from '../api/_lib/calendar.mjs';
+import { hackCalSeedEvents } from '../api/_lib/seeds.mjs';
 
 test('upcoming means an event starts today or later', () => {
   const today = '2026-08-29';
@@ -23,6 +25,22 @@ test('Google Calendar feed excludes events whose start date has passed', () => {
   ], '2026-08-29');
 
   assert.deepEqual(events.map(event => event.id), ['today', 'future']);
+});
+
+test('adds all recurring HackCal events and rolls past annual dates forward', () => {
+  const events = hackCalSeedEvents('2026-08-29');
+
+  assert.equal(events.length, 16);
+  assert.equal(events.find(event => event.name === 'Hack the North').start, '2026-09-18');
+  assert.equal(events.find(event => event.name === 'MLH Global Hack Week').start, '2027-07-13');
+  assert.ok(events.every(event => event.src === 'HackCal'));
+});
+
+test('deduplicates a built-in event that is also found by a live source', () => {
+  const live = { id: 'live', name: 'TreeHacks', start: '2027-02-12', src: 'Luma' };
+  const builtIn = { id: 'seed', name: 'TreeHacks', start: '2027-02-12', src: 'HackCal' };
+
+  assert.deepEqual(uniqueEvents([live, builtIn]), [live]);
 });
 
 test('builds a Google-compatible all-day calendar with an exclusive end date', () => {

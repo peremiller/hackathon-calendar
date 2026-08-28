@@ -10,6 +10,16 @@ export function futureStartingEvents(events, today) {
     .sort((a, b) => a.start.localeCompare(b.start));
 }
 
+export function uniqueEvents(events) {
+  const unique = new Map();
+  for (const event of Array.isArray(events) ? events : []) {
+    if (!event || !event.name || !event.start) continue;
+    const key = `${event.name.toLowerCase().replace(/[^a-z0-9]/g, '')}|${event.start}`;
+    if (!unique.has(key)) unique.set(key, event);
+  }
+  return [...unique.values()];
+}
+
 function compactDate(iso) {
   return String(iso || '').replace(/-/g, '');
 }

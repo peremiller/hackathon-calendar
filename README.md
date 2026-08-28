@@ -26,9 +26,10 @@ runs entirely in your browser and saves everything to `localStorage`.
   filtered set, importable into Google / Apple / Outlook calendars.
 - **Google Calendar subscription** — **Google Calendar** in the sidebar or
   **More → Sync Google Calendar** opens a one-time subscription prompt for the
-  live, de-duplicated HackCal + Substack tech-event feed. The feed itself is
-  refreshed every five minutes and includes events starting today or later;
-  Google Calendar controls how often it polls subscribed URLs.
+  complete de-duplicated HackCal + Substack tech-event feed, including HackCal's
+  recurring built-in events. The feed itself is refreshed every five minutes
+  and includes events starting today or later. Google Calendar controls how
+  often it polls subscribed URLs.
 - **Light & dark mode** — toggle in the header (🌙 / ☀️); remembers your choice
   and respects your OS preference on first load.
 - **Import from Discord & WhatsApp** — paste messages copied from your Discord
