@@ -323,8 +323,8 @@ const WALLED = {
 /* ================= handler ================= */
 const ADAPTERS = { luma, eventbrite, meetup, maven, substack };
 
-export default async function handler(req, res) {
-  const p = (req.query || {});
+export async function collectLiveEvents(params = {}) {
+  const p = params;
   const first = v => Array.isArray(v) ? v[0] : v;
 
   const queries = String(first(p.q) || 'hackathon,ai,developer,startup')
@@ -373,11 +373,17 @@ export default async function handler(req, res) {
   }
   const events = [...seen.values()].sort((a, b) => a.start.localeCompare(b.start)).slice(0, limit);
 
+  return {
+    fetchedAt: new Date().toISOString(),
+    query: queries, count: events.length, sources, events
+  };
+}
+
+export default async function handler(req, res) {
+  const payload = await collectLiveEvents(req.query || {});
+
   // 5-minute CDN cache keeps "refresh" snappy without hammering the upstreams;
   // stale-while-revalidate means a refresh never blocks on a cold fetch.
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=900');
-  res.status(200).json({
-    fetchedAt: new Date().toISOString(),
-    query: queries, count: events.length, sources, events
-  });
+  res.status(200).json(payload);
 }

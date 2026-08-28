@@ -16,12 +16,19 @@ runs entirely in your browser and saves everything to `localStorage`.
 - **Filtering** — free-text search (name, tech, location), a format dropdown
   (Online / In-person / Hybrid), 14 clickable tech-tag chips (AI/ML, Web3,
   FinTech, HealthTech, Climate, Gaming, AR/VR, Robotics, Cybersecurity,
-  Open Source, Mobile, Data, DevTools, Hardware), and an "Upcoming only" toggle.
+  Open Source, Mobile, Data, DevTools, Hardware), and an "Upcoming only" toggle
+  that shows events starting on today's Philippine date or later. Ongoing events
+  whose start date has passed remain available when the toggle is off.
 - **Add / edit / delete** your own hackathons through a modal form.
 - **Detail cards** — click any event for dates, format, location, tech, a
   description, and an outbound link.
 - **Calendar export** — one-click `.ics` download per event, or for the whole
   filtered set, importable into Google / Apple / Outlook calendars.
+- **Google Calendar subscription** — **Google Calendar** in the sidebar or
+  **More → Sync Google Calendar** opens a one-time subscription prompt for the
+  live, de-duplicated HackCal + Substack tech-event feed. The feed itself is
+  refreshed every five minutes and includes events starting today or later;
+  Google Calendar controls how often it polls subscribed URLs.
 - **Light & dark mode** — toggle in the header (🌙 / ☀️); remembers your choice
   and respects your OS preference on first load.
 - **Import from Discord & WhatsApp** — paste messages copied from your Discord
@@ -39,7 +46,8 @@ runs entirely in your browser and saves everything to `localStorage`.
 - **Current-date live population** — event status and every "upcoming" view use
   today's Philippine calendar date. Live Sync runs on first load, refreshes
   automatically every five minutes, and catches up when a stale tab regains
-  focus. Multi-day events remain current through their end date.
+  focus. Multi-day events remain available through their end date in the full
+  calendar, while "Upcoming" means the event itself has not started yet.
 - **Luma & calendar (.ics) import** — the **🔗 Luma** button (and the Import
   dialog's "Luma / calendar feed" source) pulls events from a
   [Luma](https://lu.ma) subscription feed or any iCalendar (`.ics`) URL —

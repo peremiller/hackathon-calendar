@@ -3,6 +3,7 @@
   "trailingSlash": false,
   "functions": {
     "api/live-events.js": { "maxDuration": 30 },
+    "api/calendar-feed.js": { "maxDuration": 30 },
     "api/telegram-digest.js": { "maxDuration": 60 }
   },
   "crons": [

@@ -316,6 +316,7 @@
       <button class="side-link" data-nav-action="import"><i class="ph ph-tray-arrow-down" aria-hidden="true"></i>Import</button>
       <button class="side-link" data-nav-action="luma"><i class="ph ph-link" aria-hidden="true"></i>Luma</button>
       <button class="side-link" data-nav-action="discord"><i class="ph ph-discord-logo" aria-hidden="true"></i>Sync Discord</button>
+      <button class="side-link" data-nav-action="google"><i class="ph ph-calendar-plus" aria-hidden="true"></i>Google Calendar</button>
       <button class="side-link" data-nav-action="export"><i class="ph ph-download-simple" aria-hidden="true"></i>Export .ics</button>
     </nav>
     <section class="side-tech" aria-labelledby="sideTechTitle">
@@ -355,6 +356,7 @@
               <button data-tool="import" role="menuitem"><i class="ph ph-tray-arrow-down" aria-hidden="true"></i>Import events</button>
               <button data-tool="luma" role="menuitem"><i class="ph ph-link" aria-hidden="true"></i>Refresh Luma feed</button>
               <button data-tool="discord" role="menuitem"><i class="ph ph-discord-logo" aria-hidden="true"></i>Sync Discord</button>
+              <button data-tool="google" role="menuitem"><i class="ph ph-calendar-plus" aria-hidden="true"></i>Sync Google Calendar</button>
               <button data-tool="export" role="menuitem"><i class="ph ph-download-simple" aria-hidden="true"></i>Export visible events</button>
               <button data-tool="reset" role="menuitem"><i class="ph ph-funnel-x" aria-hidden="true"></i>Reset filters</button>
             </div>
@@ -429,6 +431,7 @@ const uid=()=>{
 };
 const phtParts=date=>Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date).filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
 const todayISO=()=>{const p=phtParts(new Date());return `${p.year}-${p.month}-${p.day}`};
+const isUpcoming=(event,today=todayISO())=>Boolean(event&&event.start&&event.start>=today);
 const shiftISO=(iso,days)=>{const d=new Date(iso+'T12:00:00+08:00');d.setUTCDate(d.getUTCDate()+days);return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`};
 const phtDateLabel=iso=>new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',weekday:'short',month:'short',day:'numeric'}).format(new Date(iso+'T12:00:00+08:00'));
 
@@ -522,7 +525,7 @@ function filtered(){
   return data.filter(ev=>{
     if(fmtF && ev.fmt!==fmtF) return false;
     if(activeLocations.size && !activeLocations.has((ev.loc||'').trim())) return false;
-    if(upOnly && ev.end < t) return false;
+    if(upOnly && !isUpcoming(ev,t)) return false;
     if(openOnly && !isOpenForReg(ev)) return false;
     if(nonStuOnly && ev.eligibility==='Students') return false;
     if(srcF==='__manual'){ if(ev.src) return false; }
@@ -539,12 +542,12 @@ function filtered(){
 /* ---- rendering ---- */
 function renderStats(){
   const t=todayISO();
-  const up=data.filter(e=>e.end>=t).length;
+  const up=data.filter(e=>isUpcoming(e,t)).length;
   const openNow=data.filter(isOpenForReg).length;
   const nonStudents=data.filter(e=>e.eligibility!=='Students').length;
   const liveN=data.filter(e=>e.live).length;
   const lc=liveCfg();
-  const next=[...data].filter(e=>e.end>=t).sort((a,b)=>a.start.localeCompare(b.start))[0];
+  const next=[...data].filter(e=>isUpcoming(e,t)).sort((a,b)=>a.start.localeCompare(b.start))[0];
   $('#ver').textContent='v3 · '+data.length+' events';
   $('#stats').innerHTML=`
     <div class="stat"><b>${data.length}</b>total events</div>
@@ -699,7 +702,7 @@ function renderMonth(){
 function renderAgenda(){
   const el=$('#agendaEl');
   const t=todayISO();
-  const evs=filtered().filter(e=>e.end>=t).sort((a,b)=>a.start.localeCompare(b.start)).slice(0,6);
+  const evs=filtered().filter(e=>isUpcoming(e,t)).sort((a,b)=>a.start.localeCompare(b.start)).slice(0,6);
   el.innerHTML=`<div class="agenda-head"><span>What's happening next</span><a href="#" id="viewScheduleLink">View full schedule <i class="ph ph-arrow-right" aria-hidden="true"></i></a></div>`;
   evs.forEach(e=>{
     const rs=regStatus(e);
@@ -798,7 +801,7 @@ function renderRightRail(){
   const today=todayISO();
   const selectedDay=e?(e.start<=today&&e.end>=today?today:e.start):today;
   const dayRows=eventsOnDay(evs,selectedDay).slice(0,4);
-  const upcoming=evs.filter(x=>x.end>=today).slice(0,6);
+  const upcoming=evs.filter(x=>isUpcoming(x,today)).slice(0,6);
   const row=x=>{const rs=regStatus(x);return `<button class="rail-event${e&&x.id===e.id?' active':''}" data-event-id="${esc(x.id)}"><span class="rail-event-title"><span class="status-dot" style="background:${evColor(x)}"></span><span>${esc(x.name)}</span></span><span class="rail-event-meta"><span class="tag">${esc(x.fmt)}</span><span>${fmtShort(x.start)}${x.start!==x.end?'–'+fmtShort(x.end):''}</span><span class="reg ${rs.cls}">${esc(rs.short)}</span></span></button>`};
   rail.innerHTML=`<section class="rail-section">
       <div class="rail-section-head"><h3>Selected Day</h3><button class="rail-close" id="closeRail" aria-label="Hide agenda"><i class="ph ph-caret-up" aria-hidden="true"></i></button></div>
@@ -957,6 +960,13 @@ function downloadFile(name,text){
 }
 function downloadICS(id){const e=data.find(x=>x.id===id); downloadFile(slug(e.name)+'.ics',icsForEvents([e]))}
 function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+function syncGoogleCalendar(){
+  const feed=new URL('/api/calendar-feed',location.origin).href;
+  const subscribe='https://calendar.google.com/calendar/u/0/r?cid='+encodeURIComponent(feed);
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(feed).catch(()=>{});
+  window.open(subscribe,'_blank','noopener,noreferrer');
+  toast('Calendar feed URL copied · approve Add calendar once in Google Calendar');
+}
 
 /* ---- import: parse Discord / WhatsApp message text into events ---- */
 var parsedPreview=[];
@@ -1595,6 +1605,7 @@ document.querySelectorAll('[data-nav-action]').forEach(b=>b.onclick=()=>{
   if(action==='import')openImport();
   if(action==='luma')syncLuma();
   if(action==='discord')syncDiscord();
+  if(action==='google')syncGoogleCalendar();
   if(action==='export')downloadFile('hackcal-all.ics',icsForEvents(filtered()));
 });
 document.querySelectorAll('[data-support]').forEach(b=>b.onclick=()=>{
@@ -1614,6 +1625,7 @@ toolsMenu.querySelectorAll('[data-tool]').forEach(btn=>btn.onclick=()=>{
   if(action==='import')openImport();
   if(action==='luma')syncLuma();
   if(action==='discord')syncDiscord();
+  if(action==='google')syncGoogleCalendar();
   if(action==='export')downloadFile('hackcal-all.ics',icsForEvents(filtered()));
   if(action==='reset')resetFilters();
 });
