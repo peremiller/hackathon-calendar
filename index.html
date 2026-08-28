@@ -545,6 +545,7 @@ function renderStats(){
   const liveN=data.filter(e=>e.live).length;
   const lc=liveCfg();
   const next=[...data].filter(e=>e.end>=t).sort((a,b)=>a.start.localeCompare(b.start))[0];
+  $('#ver').textContent='v3 · '+data.length+' events';
   $('#stats').innerHTML=`
     <div class="stat"><b>${data.length}</b>total events</div>
     <div class="stat"><b>${up}</b>upcoming</div>
@@ -1333,7 +1334,8 @@ async function liveSync(silent){
   try{
     const url='/api/live-events?q='+encodeURIComponent(cfg.q||LIVE_DEFAULTS.q)+
       '&sources='+encodeURIComponent(cfg.sources.join(','))+
-      '&filter='+encodeURIComponent(cfg.filter||LIVE_DEFAULTS.filter)+'&_='+Date.now();
+      '&filter='+encodeURIComponent(cfg.filter||LIVE_DEFAULTS.filter)+
+      '&limit=1000&_='+Date.now();
     const r=await fetch(url);
     const j=await r.json().catch(()=>({}));
     if(r.status===404){ if(!silent) toast('Live sync needs the /api/live-events function — deploy the app to Vercel to enable it.'); return; }

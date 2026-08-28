@@ -331,7 +331,7 @@ export default async function handler(req, res) {
     .split(',').map(s => s.trim()).filter(Boolean).slice(0, 4);
   const want = String(first(p.sources) || 'luma,eventbrite,meetup,maven,substack')
     .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-  const limit = Math.min(Math.max(parseInt(first(p.limit), 10) || 400, 1), 1000);
+  const limit = Math.min(Math.max(parseInt(first(p.limit), 10) || 1000, 1), 1000);
   const keep = KEEP[String(first(p.filter) || 'tech').toLowerCase()] || KEEP.tech;
   const deadline = Date.now() + BUDGET_MS;
 
