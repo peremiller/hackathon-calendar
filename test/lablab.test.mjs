@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { parseLablabDirectory } from '../api/_lib/lablab.mjs';
+import {
+  fetchLablabEvents,
+  parseLablabCalendar,
+  parseLablabDirectory,
+} from '../api/_lib/lablab.mjs';
 
 const directory = `
   <a href="/ai-hackathons/alpaca-ai-trading-agents-hackathon">
@@ -36,4 +40,36 @@ test('extracts every dated current lablab.ai card and skips TBA or finished card
   assert.equal(events[1].fmt, 'Hybrid');
   assert.match(events[1].loc, /Santa Clara Convention Center/);
   assert.equal(events[2].url, 'https://lablab.ai/ai-hackathons/amd-lablab-ai-academy-challenge');
+});
+
+test('parses lablab cards from the public Markdown reader fallback', () => {
+  const markdown = `[![Image 1: IBM Bob 2.0 hackathon](https://img.example/bob.jpg) Register Online SEP 25 - 27 7137 ## IBM Bob 2.0 hackathon 💻 Online Hackathon | September 25–27, 2026](https://lablab.ai/ai-hackathons/ibm-bob-2-hackathon)`;
+  const events = parseLablabDirectory(markdown, new Date('2026-08-30T00:00:00Z'));
+
+  assert.deepEqual(events.map(event => [event.name, event.start, event.end, event.fmt]), [
+    ['IBM Bob 2.0 hackathon', '2026-09-25', '2026-09-27', 'Online'],
+  ]);
+});
+
+test('adds newly dated lablab events from its official Luma calendar', () => {
+  const html = `<script type="application/ld+json">{"@type":"ItemList","itemListElement":[{"item":{"@type":"Event","url":"https://luma.com/genesis","name":"AI GENESIS","eventAttendanceMode":"https://schema.org/OfflineEventAttendanceMode","startDate":"2026-11-02T10:00:00.000+04:00","endDate":"2026-11-03T20:00:00.000+04:00","location":{"name":"Dubai","address":{"addressLocality":"Dubai","addressCountry":"AE"}}}}]}</script>`;
+  const events = parseLablabCalendar(html);
+
+  assert.deepEqual(events.map(event => [event.name, event.start, event.end, event.fmt]), [
+    ['AI GENESIS', '2026-11-02', '2026-11-03', 'Hybrid'],
+  ]);
+});
+
+test('combines the directory and official calendar without duplicate cross-posts', async () => {
+  const markdown = `[![Image 1: AI Infra Summit Hackathon](https://img.example/infra.jpg) Register Hybrid SEP 10 - 17 ## AI Infra Summit Hackathon](https://lablab.ai/ai-hackathons/ai-infra-summit-hackathon)`;
+  const calendar = `<script type="application/ld+json">{"@type":"ItemList","itemListElement":[{"item":{"@type":"Event","url":"https://luma.com/infra","name":"AI Infra Summit Hackathon","startDate":"2026-09-15T08:00:00-07:00","endDate":"2026-09-17T16:00:00-07:00"}},{"item":{"@type":"Event","url":"https://luma.com/genesis","name":"AI GENESIS","startDate":"2026-11-02T10:00:00+04:00","endDate":"2026-11-03T20:00:00+04:00"}}]}</script>`;
+  const events = await fetchLablabEvents({
+    now: new Date('2026-08-30T00:00:00Z'),
+    grab: async url => ({ ok: true, status: 200, text: url.includes('r.jina.ai') ? markdown : calendar }),
+  });
+
+  assert.deepEqual(events.map(event => [event.name, event.start]), [
+    ['AI Infra Summit Hackathon', '2026-09-10'],
+    ['AI GENESIS', '2026-11-02'],
+  ]);
 });
