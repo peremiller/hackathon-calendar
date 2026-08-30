@@ -46,6 +46,12 @@ jobs:
         if: steps.semantic.outcome != 'success'
         run: graphify extract . --code-only --force
 
+      - name: Generate graph report
+        run: |
+          if [ ! -s graphify-out/GRAPH_REPORT.md ]; then
+            graphify cluster-only .
+          fi
+
       - name: Record build metadata
         env:
           GRAPHIFY_SEMANTIC_COMPLETE: ${{ steps.semantic.outcome == 'success' }}
