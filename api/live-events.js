@@ -1,6 +1,6 @@
 // Vercel serverless function: live event aggregator for HackCal.
 //
-//   GET /api/live-events?q=hackathon&sources=luma,eventbrite,meetup,maven,substack
+//   GET /api/live-events?q=hackathon&sources=luma,eventbrite,meetup,maven,substack,lablab
 //
 // Fans out to every requested source in parallel, normalises each result into
 // HackCal's event shape and returns them de-duplicated, newest-first.
@@ -11,6 +11,7 @@
 //   meetup     ✅ /find/?source=EVENTS embeds a schema.org JSON-LD Event array
 //   maven      ✅ maven.com/courses embeds __NEXT_DATA__ with each course's next live cohort
 //   substack   ✅ public publication RSS feeds, parsed into the events listed inside each issue
+//   lablab      ✅ public lablab.ai hackathon directory, including live and registration-open events
 //   linkedin   ❌ every events URL 307s to the auth wall — no logged-out access, no public API
 //   facebook   ❌ event pages render a login gate; Graph API dropped public event search in 2018
 //
@@ -18,6 +19,7 @@
 // the user can open themselves, rather than silently returning nothing.
 
 import { fetchSubstackEvents } from './_lib/substack.mjs';
+import { fetchLablabEvents } from './_lib/lablab.mjs';
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 const BUDGET_MS = 12000;  // overall wall-clock budget; partial results beat a timeout
@@ -283,6 +285,14 @@ async function substack(_queries, deadline) {
   return fetchSubstackEvents({ grab, deadline });
 }
 
+/* ================= LABLAB.AI ================= */
+// lablab's public directory is authoritative for its active AI hackathons. Its
+// dated cards are refreshed with the same five-minute cache as the other feeds;
+// TBA cards join automatically once lablab publishes a calendar range.
+async function lablab(_queries, deadline) {
+  return fetchLablabEvents({ grab, deadline });
+}
+
 /* ================= relevance ================= */
 // The category sweeps (Luma's whole "tech" feed, Meetup's keyword pages) drag in
 // art swaps and picnics alongside real build events, so every event is classified
@@ -321,7 +331,7 @@ const WALLED = {
 };
 
 /* ================= handler ================= */
-const ADAPTERS = { luma, eventbrite, meetup, maven, substack };
+const ADAPTERS = { luma, eventbrite, meetup, maven, substack, lablab };
 
 export async function collectLiveEvents(params = {}) {
   const p = params;
@@ -329,7 +339,7 @@ export async function collectLiveEvents(params = {}) {
 
   const queries = String(first(p.q) || 'hackathon,ai,developer,startup')
     .split(',').map(s => s.trim()).filter(Boolean).slice(0, 4);
-  const want = String(first(p.sources) || 'luma,eventbrite,meetup,maven,substack')
+  const want = String(first(p.sources) || 'luma,eventbrite,meetup,maven,substack,lablab')
     .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   const limit = Math.min(Math.max(parseInt(first(p.limit), 10) || 1000, 1), 1000);
   const keep = KEEP[String(first(p.filter) || 'tech').toLowerCase()] || KEEP.tech;

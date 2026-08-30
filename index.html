@@ -387,7 +387,7 @@
               </div>
             </div>
             <select class="format-select" id="srcFilter" aria-label="Filter by event source">
-              <option value="">All sources</option><option value="Luma">Luma</option><option value="Eventbrite">Eventbrite</option><option value="Meetup">Meetup</option><option value="Maven">Maven</option><option value="Substack">Substack</option><option value="__manual">Added by me</option>
+              <option value="">All sources</option><option value="Luma">Luma</option><option value="Eventbrite">Eventbrite</option><option value="Meetup">Meetup</option><option value="Maven">Maven</option><option value="Substack">Substack</option><option value="lablab.ai">lablab.ai</option><option value="__manual">Added by me</option>
             </select>
             <button class="filter-row" id="upFilter" aria-pressed="false"><span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">Upcoming only</span><span class="filter-count" id="upCount">0</span></button>
             <button class="filter-row good" id="openFilter" aria-pressed="false"><span class="checkmark"><i class="ph ph-check" aria-hidden="true"></i></span><span class="filter-label">Open to register</span><span class="filter-count" id="openCount">0</span></button>
@@ -1243,7 +1243,7 @@ function confirmImport(){
 
 /* ================= LIVE SYNC =================
    Pulls real, current listings from /api/live-events (Luma, Eventbrite, Meetup,
-   Maven and public Substack tech-event feeds) and upserts them by source id, so re-syncing refreshes an event's
+   Maven, public Substack tech-event feeds, and lablab.ai) and upserts them by source id, so re-syncing refreshes an event's
    dates instead of piling up duplicates. LinkedIn and Facebook can't be fetched
    server-side (both hard-gate signed-out visitors), so they're surfaced in the
    panel with a search link and the paste-import path instead. */
@@ -1254,13 +1254,14 @@ const LIVE_SOURCES=[
   {id:'meetup',    label:'Meetup',     icon:'ph-users-three', live:true},
   {id:'maven',     label:'Maven',      icon:'ph-graduation-cap', live:true, note:'live cohort courses'},
   {id:'substack',  label:'Substack',   icon:'ph-newspaper', live:true, note:'public tech-event publications'},
+  {id:'lablab',    label:'lablab.ai',  icon:'ph-code', live:true, note:'AI hackathon directory'},
   {id:'linkedin',  label:'LinkedIn',   icon:'ph-linkedin-logo', live:false},
   {id:'facebook',  label:'Facebook',   icon:'ph-facebook-logo', live:false}
 ];
-const SRC_ICONS={Luma:'ph-link',Eventbrite:'ph-ticket',Meetup:'ph-users-three',Maven:'ph-graduation-cap',Substack:'ph-newspaper',Discord:'ph-discord-logo',WhatsApp:'ph-whatsapp-logo'};
+const SRC_ICONS={Luma:'ph-link',Eventbrite:'ph-ticket',Meetup:'ph-users-three',Maven:'ph-graduation-cap',Substack:'ph-newspaper','lablab.ai':'ph-code',Discord:'ph-discord-logo',WhatsApp:'ph-whatsapp-logo'};
 const srcIcon=s=>`<i class="ph ${SRC_ICONS[s]||'ph-arrow-square-in'}" aria-hidden="true"></i>`;
 
-const LIVE_DEFAULTS={schema:2,sources:['luma','eventbrite','meetup','maven','substack'],filter:'tech',q:'hackathon,ai,developer,startup',auto:5,lastSync:null,report:null};
+const LIVE_DEFAULTS={schema:3,sources:['luma','eventbrite','meetup','maven','substack','lablab'],filter:'tech',q:'hackathon,ai,developer,startup',auto:5,lastSync:null,report:null};
 function liveCfg(){
   let c={}; try{c=JSON.parse(localStorage.getItem(LIVE_KEY))||{}}catch(e){}
   // Existing installs saved the old hackathon-only defaults in localStorage.
@@ -1270,6 +1271,7 @@ function liveCfg(){
     const oldDefault=(!c.q||c.q==='hackathon')&&(!c.filter||c.filter==='hack');
     const sources=Array.isArray(c.sources)?[...c.sources]:[...LIVE_DEFAULTS.sources];
     if(!sources.includes('substack')) sources.push('substack');
+    if(!sources.includes('lablab')) sources.push('lablab');
     c=Object.assign({},c,{schema:LIVE_DEFAULTS.schema,sources});
     if(oldDefault){c.filter=LIVE_DEFAULTS.filter;c.q=LIVE_DEFAULTS.q;c.auto=LIVE_DEFAULTS.auto}
     else if(c.auto==null||+c.auto===15)c.auto=LIVE_DEFAULTS.auto;

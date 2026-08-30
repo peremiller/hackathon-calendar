@@ -26,7 +26,7 @@ runs entirely in your browser and saves everything to `localStorage`.
   filtered set, importable into Google / Apple / Outlook calendars.
 - **Google Calendar subscription** — **Google Calendar** in the sidebar or
   **More → Sync Google Calendar** opens a one-time subscription prompt for the
-  complete de-duplicated HackCal + Substack tech-event feed, including HackCal's
+  complete de-duplicated HackCal, Substack, and lablab.ai tech-event feed, including HackCal's
   recurring built-in events. The feed itself is refreshed every five minutes
   and includes events starting today or later. Google Calendar controls how
   often it polls subscribed URLs.
@@ -44,6 +44,10 @@ runs entirely in your browser and saves everything to `localStorage`.
   of active tech-event publications, extracts the individual dated events
   listed inside each issue, and de-duplicates them against the other sources.
   Substack is enabled by default for both the web calendar and Telegram bot.
+- **lablab.ai live sync** — every dated current event in lablab.ai's public AI
+  hackathon directory is refreshed automatically and flows through the website,
+  Telegram bot, and Google Calendar feed. Date-TBA cards are picked up as soon
+  as lablab.ai publishes an actual date range.
 - **Current-date live population** — event status and every "upcoming" view use
   today's Philippine calendar date. Live Sync runs on first load, refreshes
   automatically every five minutes, and catches up when a stale tab regains

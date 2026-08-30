@@ -1,0 +1,93 @@
+// Public lablab.ai hackathon-directory ingestion for HackCal.
+//
+// The directory is server-rendered and each event card links to a stable
+// /ai-hackathons/<slug> page.  We deliberately read only public card data;
+// no account, cookie, or private API is required. Events whose dates are still
+// TBA are skipped until lablab publishes a real calendar range.
+
+import { parseDateRange } from './substack.mjs';
+
+const DIRECTORY_URL = 'https://lablab.ai/ai-hackathons';
+
+const decode = value => String(value == null ? '' : value)
+  .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+  .replace(/&quot;/g, '"').replace(/&#39;|&apos;|&rsquo;/g, "'")
+  .replace(/&nbsp;|&#160;/g, ' ').replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n));
+
+const text = html => decode(String(html || '')
+  .replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
+  .replace(/<script\b[\s\S]*?<\/script>/gi, ' ')
+  .replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
+
+function titleFromSlug(slug) {
+  return String(slug || '').split('-').filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    .replace(/\bAi\b/g, 'AI').replace(/\bAmd\b/g, 'AMD')
+    .replace(/\bIbm\b/g, 'IBM').replace(/\bIii\b/g, 'III')
+    .replace(/\bAssemblyai\b/g, 'AssemblyAI')
+    .replace(/\bWearedevelopers\b/g, 'WeAreDevelopers')
+    .replace(/\bTechex\b/g, 'TechEx').replace(/\bLablab\b/g, 'lablab');
+}
+
+function cardTitle(raw, slug) {
+  const candidates = [];
+  const heading = String(raw || '').match(/<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/i);
+  if (heading) candidates.push(text(heading[1]));
+  for (const match of String(raw || '').matchAll(/\balt=["']([^"']+)["']/gi)) {
+    candidates.push(text(match[1]).replace(/\s+(?:event\s+)?thumbnail$/i, ''));
+  }
+  const labelled = candidates.find(value => value.length >= 4 && value.length <= 110 &&
+    /(?:hackathon|challenge|academy|agents|genesis)/i.test(value));
+  return labelled || titleFromSlug(slug);
+}
+
+function eventLocation(card, format) {
+  if (format === 'Online') return 'Online / Virtual';
+  const match = String(card || '').match(/(?:on-site\s+venue|venue|location)\s*(?:\([^)]*\))?\s*[:\-–—]?\s*([\s\S]{3,110}?)(?=\s+(?:on-site participation|travel|build|prize|register|apply|sign up|$))/i);
+  if (match) return text(match[1]).slice(0, 70);
+  return format === 'Hybrid' ? 'Online + on-site (see event page)' : 'See event page';
+}
+
+export function parseLablabDirectory(html, now = new Date()) {
+  const events = [], slugs = new Set();
+  const floor = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(now);
+  const re = /<a\b[^>]*href=["'](?:https:\/\/lablab\.ai)?(\/ai-hackathons\/([^"'/?#]+))[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+  while ((match = re.exec(String(html || '')))) {
+    const path = match[1], slug = match[2].toLowerCase();
+    if (slugs.has(slug)) continue;
+    slugs.add(slug);
+    const card = text(match[3]);
+    const date = parseDateRange(card, now);
+    // A calendar cannot plot a TBA item truthfully. It will be picked up on a
+    // later refresh as soon as lablab publishes an actual range.
+    if (!date || date.end < floor) continue;
+    const name = cardTitle(match[3], slug).slice(0, 110);
+    const format = /\bhybrid\b/i.test(card) ? 'Hybrid'
+      : /\b(?:online|virtual)\b/i.test(card) ? 'Online' : 'In-person';
+    const at = card.toLowerCase().indexOf(name.toLowerCase());
+    const description = (at >= 0 ? card.slice(at + name.length) : card).trim();
+    events.push({
+      src: 'lablab.ai', extId: `lablab:${slug}`, name,
+      start: date.start, end: date.end, startAt: null, endAt: null,
+      tz: null, allDay: true, fmt: format, loc: eventLocation(card, format),
+      url: new URL(path, DIRECTORY_URL).href,
+      desc: description.slice(0, 260),
+      hay: `${card} lablab.ai AI developer hackathon`.slice(0, 600)
+    });
+  }
+  return events;
+}
+
+export async function fetchLablabEvents({ grab, deadline = Infinity, now = new Date() } = {}) {
+  if (typeof grab !== 'function') throw new Error('A fetch helper is required');
+  if (Date.now() > deadline) return [];
+  const response = await grab(DIRECTORY_URL);
+  if (!response || !response.ok) {
+    throw new Error(`lablab.ai returned HTTP ${(response && response.status) || 'unknown'}`);
+  }
+  return parseLablabDirectory(response.text, now);
+}
+

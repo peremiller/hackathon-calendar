@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   try {
     const payload = await collectLiveEvents({
       q: 'hackathon,ai,developer,startup',
-      sources: 'luma,eventbrite,meetup,maven,substack',
+      sources: 'luma,eventbrite,meetup,maven,substack,lablab',
       filter: 'tech',
       limit: '1000',
     });
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
       today,
     );
     const calendar = buildCalendar(events, {
-      name: 'HackCal + Substack Tech Events',
+      name: 'HackCal Tech Events + lablab.ai',
       generatedAt: payload.fetchedAt,
     });
 

@@ -5,8 +5,8 @@ A daily **07:30 Asia/Manila** push of the hackathons and tech events running
 
 The web app keeps its events in `localStorage`, which a cron job can never read,
 so the bot re-runs the same server-side aggregation the app's 🌐 Live Sync uses
-(`/api/live-events` → Luma, Eventbrite, Meetup, Maven and public Substack
-tech-event feeds) and narrows it to the next two calendar days.
+(`/api/live-events` → Luma, Eventbrite, Meetup, Maven, public Substack feeds,
+and lablab.ai) and narrows it to the next two calendar days.
 
 > The 16 built-in seed hackathons are deliberately **excluded**. Their dates are
 > illustrative ("typical next edition", shown with a `≈` in the app), and an
@@ -51,6 +51,7 @@ Time coverage depends on what each source actually publishes:
 | Meetup | ✅ | schema.org `startDate` with an offset |
 | Maven | ✅ | Cohort start timestamp + the school's timezone |
 | Substack | When listed | Publication issues sometimes include a time; date-only listings stay date-only |
+| lablab.ai | ❌ | Directory cards publish date ranges but no reliable clock time |
 | Eventbrite | ❌ | Its **search-page** JSON-LD carries a bare date (`2026-10-12`) with no clock — the time only exists on each event's own page, which would cost one request per event |
 
 Events with no published time simply show none, rather than a made-up midnight.
@@ -64,7 +65,7 @@ Both default from env vars and can be overridden per-command.
 | Dial | Values | Meaning |
 | --- | --- | --- |
 | `scope` | `hack` | Hackathons, jams, CTFs, demo days + Maven cohorts |
-| | `tech` *(default)* | The above plus general tech meetups, conferences and Substack tech events |
+| | `tech` *(default)* | The above plus general tech meetups, conferences, Substack tech events, and lablab.ai hackathons |
 | | `all` | No relevance filtering — everything Live Sync returns |
 | `region` | `ph` *(default)* | Online/hybrid events **plus** anything physically in the Philippines |
 | | `online` | Online/hybrid only |
