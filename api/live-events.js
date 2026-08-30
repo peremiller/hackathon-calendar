@@ -42,7 +42,7 @@ async function pool(limit, thunks) {
 }
 
 /* ---------- tiny fetch helper with a hard timeout ---------- */
-async function grab(url, ms = PER_REQ_MS) {
+async function grab(url, ms = PER_REQ_MS, extraHeaders = {}) {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), ms);
   try {
@@ -52,7 +52,8 @@ async function grab(url, ms = PER_REQ_MS) {
       headers: {
         'User-Agent': UA,
         'Accept': 'text/html,application/json,application/xhtml+xml,*/*',
-        'Accept-Language': 'en-US,en;q=0.9'
+        'Accept-Language': 'en-US,en;q=0.9',
+        ...extraHeaders,
       }
     });
     return { ok: r.ok, status: r.status, text: await r.text() };

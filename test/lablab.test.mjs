@@ -61,8 +61,10 @@ test('adds newly dated lablab events from its official Luma calendar', () => {
 });
 
 test('combines the directory and official calendar without duplicate cross-posts', async () => {
-  const markdown = `[![Image 1: AI Infra Summit Hackathon](https://img.example/infra.jpg) Register Hybrid SEP 10 - 17 ## AI Infra Summit Hackathon](https://lablab.ai/ai-hackathons/ai-infra-summit-hackathon)`;
-  const calendar = `<script type="application/ld+json">{"@type":"ItemList","itemListElement":[{"item":{"@type":"Event","url":"https://luma.com/infra","name":"AI Infra Summit Hackathon","startDate":"2026-09-15T08:00:00-07:00","endDate":"2026-09-17T16:00:00-07:00"}},{"item":{"@type":"Event","url":"https://luma.com/genesis","name":"AI GENESIS","startDate":"2026-11-02T10:00:00+04:00","endDate":"2026-11-03T20:00:00+04:00"}}]}</script>`;
+  const markdown = `[![Image 1: AI Infra Summit Hackathon](https://img.example/infra.jpg) Register Hybrid SEP 10 - 17 2084 ## AI Infra Summit Hackathon](https://lablab.ai/ai-hackathons/ai-infra-summit-hackathon)
+
+[![Image 2: TechEx Amsterdam Hackathon - AI & Big Data Expo Europe](https://img.example/techex.jpg) Register Hybrid OCT 16 - 19 ## TechEx Amsterdam Hackathon - AI & Big Data Expo Europe](https://lablab.ai/ai-hackathons/techex-amsterdam-hackathon)`;
+  const calendar = `<script type="application/ld+json">{"@type":"ItemList","itemListElement":[{"item":{"@type":"Event","url":"https://luma.com/infra","name":"AI Infra Summit Hackathon","startDate":"2026-09-15T08:00:00-07:00","endDate":"2026-09-17T16:00:00-07:00"}},{"item":{"@type":"Event","url":"https://luma.com/techex","name":"TechEx Amsterdam Hackathon","startDate":"2026-10-19T09:00:00+02:00","endDate":"2026-10-20T16:00:00+02:00"}},{"item":{"@type":"Event","url":"https://luma.com/genesis","name":"AI GENESIS","startDate":"2026-11-02T10:00:00+04:00","endDate":"2026-11-03T20:00:00+04:00"}}]}</script>`;
   const events = await fetchLablabEvents({
     now: new Date('2026-08-30T00:00:00Z'),
     grab: async url => ({ ok: true, status: 200, text: url.includes('r.jina.ai') ? markdown : calendar }),
@@ -70,6 +72,8 @@ test('combines the directory and official calendar without duplicate cross-posts
 
   assert.deepEqual(events.map(event => [event.name, event.start]), [
     ['AI Infra Summit Hackathon', '2026-09-10'],
+    ['TechEx Amsterdam Hackathon - AI & Big Data Expo Europe', '2026-10-16'],
     ['AI GENESIS', '2026-11-02'],
   ]);
+  assert.equal(events[1].end, '2026-10-20');
 });

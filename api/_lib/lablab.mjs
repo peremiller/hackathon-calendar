@@ -72,7 +72,13 @@ export function parseLablabDirectory(html, now = new Date()) {
     if (slugs.has(slug)) continue;
     slugs.add(slug);
     const card = text(item.raw).replace(/#{1,6}\s*/g, '');
-    const date = parseDateRange(card, now);
+    let date = parseDateRange(card, now);
+    const referenceYear = new Date(now).getUTCFullYear();
+    // The card places its participant count immediately after the compact date
+    // (for example "SEP 10 - 17 2084"). Do not mistake that count for a year.
+    if (date && Math.abs(Number(date.start.slice(0, 4)) - referenceYear) > 3) {
+      date = parseDateRange(card.replace(/\b20\d{2}\b/, ' '), now);
+    }
     // A calendar cannot plot a TBA item truthfully. It will be picked up on a
     // later refresh as soon as lablab publishes an actual range.
     if (!date || date.end < floor) continue;
@@ -128,8 +134,10 @@ export async function fetchLablabEvents({ grab, deadline = Infinity, now = new D
   if (typeof grab !== 'function') throw new Error('A fetch helper is required');
   if (Date.now() > deadline) return [];
   const results = await Promise.allSettled([
-    grab(READER_URL),
-    grab(CALENDAR_URL),
+    // Jina's Markdown response rejects a full Chrome UA without matching
+    // client-hint headers. A minimal UA + text Accept is the stable public path.
+    grab(READER_URL, 15000, { 'User-Agent': 'Mozilla/5.0', 'Accept': 'text/plain' }),
+    grab(CALENDAR_URL, 15000),
   ]);
   const directoryResponse = results[0].status === 'fulfilled' ? results[0].value : null;
   const calendarResponse = results[1].status === 'fulfilled' ? results[1].value : null;
@@ -138,11 +146,25 @@ export async function fetchLablabEvents({ grab, deadline = Infinity, now = new D
   const calendar = calendarResponse && calendarResponse.ok
     ? parseLablabCalendar(calendarResponse.text) : [];
   const seen = new Map();
+  const eventKey = name => {
+    const value = text(name);
+    const core = (value.match(/^(.*?\bhackathon)\b/i) || [null, value])[1];
+    return core.toLowerCase().replace(/[^a-z0-9]/g, '');
+  };
   // Prefer the lablab directory's full online-build range when an event is also
   // present on Luma, whose listing may cover only the on-site phase.
   for (const event of [...directory, ...calendar]) {
-    const key = event.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (!seen.has(key)) seen.set(key, event);
+    const key = eventKey(event.name);
+    if (!seen.has(key)) {
+      seen.set(key, event);
+      continue;
+    }
+    const current = seen.get(key);
+    // Directory cards include the online build phase; Luma can include a later
+    // on-site finale. Preserve the earliest start and latest published end.
+    if (event.start < current.start) current.start = event.start;
+    if (event.end > current.end) current.end = event.end;
+    if (/see event page/i.test(current.loc || '') && event.loc) current.loc = event.loc;
   }
   if (!seen.size) {
     const status = [directoryResponse, calendarResponse].map(r => r && r.status).filter(Boolean).join('/');
