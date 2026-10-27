@@ -301,6 +301,49 @@
   @media(min-width:1181px) and (max-width:1320px){.app-shell{--fit-scale:.9;--fit-width:111.112%;--fit-height:111.112vh}}
   @media(min-width:900px) and (max-width:1000px){.app-shell{--fit-scale:.68;--fit-width:147.059%;--fit-height:147.059vh}}
 </style>
+<style id="archive-craft">/* Archive craft standard · 28 October 2026. Brand palettes and semantic colors stay app-owned. */
+@media screen {
+html { scrollbar-gutter:stable; }
+html body { -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-kerning:normal; }
+html :is(h1,h2,h3) { text-wrap:balance; }
+html :is(p,li,td,dd) { overflow-wrap:break-word; }
+html :is(button,a,input,select,textarea,summary) { -webkit-tap-highlight-color:transparent;touch-action:manipulation; }
+html :is(button,a,input,select,textarea,summary):focus-visible { outline:3px solid var(--focus,var(--teal,var(--green,#527a91)));outline-offset:3px; }
+html :is(input,textarea)::placeholder { opacity:.8; }
+html :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=hidden]),select) { min-height:40px;border-radius:6px; }
+html textarea { line-height:1.65;border-radius:6px; }
+html :is(.btn,.button) { min-height:38px;border-radius:6px;font-size:12px;line-height:1.4;letter-spacing:0; }
+html :is(.btn.small,.button.small) { min-height:30px;font-size:11px; }
+html :is(.nav-link,.navitem,.nav-item) { min-height:42px;font-size:13px;line-height:1.5;border-radius:6px; }
+html :is(.nav-label,.navgroup,.section-label) { letter-spacing:.13em;line-height:1.7; }
+html :is(.panel,.card,.metric,.stat,.source-card,.learning-card,.network-card,.ecosystem-card) { box-shadow:none;border-radius:10px; }
+html :is(.panel-head,.panelhead,.card-head) { gap:16px; }
+html :is(.metric,.stat) { font-variant-numeric:tabular-nums; }
+html :is(.metric-top,.metric-label) { font-size:12px;line-height:1.55; }
+html :is(.metric p,.metric small,.stat p,.stat small,.metric-foot,.panel-head p,.panelhead p) { font-size:11px;line-height:1.7; }
+html :is(.table-wrap,.table-scroll,.table-container) { overscroll-behavior-x:contain;scrollbar-width:thin; }
+html table { font-variant-numeric:tabular-nums; }
+html th { font-size:11px;line-height:1.5;font-weight:600;letter-spacing:.025em; }
+html td { font-size:12px;line-height:1.65; }
+html :is(.empty,.empty-state) { line-height:1.7; }
+html dialog { max-height:90dvh;overflow:auto;overscroll-behavior:contain;border-radius:12px; }
+html :is(.tabs,.toolbar,.filter-bar,.filters,.actions,.button-row,.dialog-actions) { row-gap:10px; }
+@media(min-width:1100px) { html :is(.main h1,main>h1,.page-heading h1,.page-head h1) { font-size:clamp(30px,2.7vw,38px);line-height:1.2;letter-spacing:-.04em; } }
+@media(max-width:640px) {
+ html :is(.btn,.button) { min-height:42px; }
+ html :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=hidden]),select,textarea) { font-size:16px; }
+ html :is(.metric-top,.metric-label) { font-size:11px; }
+ html :is(.metric p,.metric small,.stat p,.stat small) { font-size:11px; }
+ html :is(.page-heading,.page-head,.panel-head,.panelhead) { flex-wrap:wrap; }
+ html :is(.toolbar,.filter-bar,.filters,.actions,.button-row,.dialog-actions) { flex-wrap:wrap; }
+ html :is(.panel,.card) { max-width:100%;min-width:0; }
+ html dialog { max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px); }
+}
+}
+@media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important; } }
+
+@media screen{html .card{box-shadow:none}html .agenda-row{padding-top:16px;padding-bottom:16px}html .agenda-name{font-weight:600}html .filter-panel{border-radius:8px}html .app-main h1{letter-spacing:-.04em}html .live-row{font-size:12px}}
+</style>
 </head>
 <body>
 <div class="app-shell">
