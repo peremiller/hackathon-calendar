@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "build": "node scripts/prepare-offline-static.mjs && node scripts/offline/build.mjs --dir dist --name \"HackCal\" --spa --limits \"Local calendars, seeded events, imported files and saved events work offline. Live discovery, server feed imports, Discord and Telegram require internet.\"",
+    "test:offline": "node --test scripts/offline/offline.test.mjs scripts/offline/client.test.mjs"
   }
 }

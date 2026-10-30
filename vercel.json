@@ -2,14 +2,22 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
-    "api/live-events.js": { "maxDuration": 30 },
-    "api/calendar-feed.js": { "maxDuration": 30 },
-    "api/telegram-digest.js": { "maxDuration": 60 }
+    "api/live-events.js": {
+      "maxDuration": 30
+    },
+    "api/calendar-feed.js": {
+      "maxDuration": 30
+    },
+    "api/telegram-digest.js": {
+      "maxDuration": 60
+    }
   },
   "crons": [
     {
       "path": "/api/telegram-digest",
       "schedule": "30 23 * * *"
     }
-  ]
+  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
 }
