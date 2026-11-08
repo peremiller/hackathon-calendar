@@ -1292,6 +1292,7 @@ function confirmImport(){
    panel with a search link and the paste-import path instead. */
 const LIVE_KEY='hackcal.live';
 const LIVE_SOURCES=[
+  {id:'primeqe', label:'PrimeQE Founder Hub', icon:'ph-calendar', live:true},
   {id:'luma',      label:'Luma',       icon:'ph-link', live:true},
   {id:'eventbrite',label:'Eventbrite', icon:'ph-ticket', live:true},
   {id:'meetup',    label:'Meetup',     icon:'ph-users-three', live:true},
@@ -1304,7 +1305,7 @@ const LIVE_SOURCES=[
 const SRC_ICONS={Luma:'ph-link',Eventbrite:'ph-ticket',Meetup:'ph-users-three',Maven:'ph-graduation-cap',Substack:'ph-newspaper','lablab.ai':'ph-code',Discord:'ph-discord-logo',WhatsApp:'ph-whatsapp-logo'};
 const srcIcon=s=>`<i class="ph ${SRC_ICONS[s]||'ph-arrow-square-in'}" aria-hidden="true"></i>`;
 
-const LIVE_DEFAULTS={schema:3,sources:['luma','eventbrite','meetup','maven','substack','lablab'],filter:'tech',q:'hackathon,ai,developer,startup',auto:5,lastSync:null,report:null};
+const LIVE_DEFAULTS={schema:4,sources:['luma','eventbrite','meetup','maven','substack','lablab','primeqe'],filter:'tech',q:'hackathon,ai,developer,startup',auto:5,lastSync:null,report:null};
 function liveCfg(){
   let c={}; try{c=JSON.parse(localStorage.getItem(LIVE_KEY))||{}}catch(e){}
   // Existing installs saved the old hackathon-only defaults in localStorage.
@@ -1315,6 +1316,7 @@ function liveCfg(){
     const sources=Array.isArray(c.sources)?[...c.sources]:[...LIVE_DEFAULTS.sources];
     if(!sources.includes('substack')) sources.push('substack');
     if(!sources.includes('lablab')) sources.push('lablab');
+    if(!sources.includes('primeqe')) sources.push('primeqe');
     c=Object.assign({},c,{schema:LIVE_DEFAULTS.schema,sources});
     if(oldDefault){c.filter=LIVE_DEFAULTS.filter;c.q=LIVE_DEFAULTS.q;c.auto=LIVE_DEFAULTS.auto}
     else if(c.auto==null||+c.auto===15)c.auto=LIVE_DEFAULTS.auto;

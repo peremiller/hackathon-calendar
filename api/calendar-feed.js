@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   try {
     const payload = await collectLiveEvents({
       q: 'hackathon,ai,developer,startup',
-      sources: 'luma,eventbrite,meetup,maven,substack,lablab',
+      sources: 'luma,eventbrite,meetup,maven,substack,lablab,primeqe',
       filter: 'tech',
       limit: '1000',
     });

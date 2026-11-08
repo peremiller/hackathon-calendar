@@ -20,6 +20,7 @@
 
 import { fetchSubstackEvents } from './_lib/substack.mjs';
 import { fetchLablabEvents } from './_lib/lablab.mjs';
+import { fetchFounderEvents } from './_lib/founder.mjs';
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 const BUDGET_MS = 12000;  // overall wall-clock budget; partial results beat a timeout
@@ -332,7 +333,7 @@ const WALLED = {
 };
 
 /* ================= handler ================= */
-const ADAPTERS = { luma, eventbrite, meetup, maven, substack, lablab };
+const ADAPTERS = { luma, eventbrite, meetup, maven, substack, lablab, primeqe: fetchFounderEvents };
 
 export async function collectLiveEvents(params = {}) {
   const p = params;
@@ -340,7 +341,7 @@ export async function collectLiveEvents(params = {}) {
 
   const queries = String(first(p.q) || 'hackathon,ai,developer,startup')
     .split(',').map(s => s.trim()).filter(Boolean).slice(0, 4);
-  const want = String(first(p.sources) || 'luma,eventbrite,meetup,maven,substack,lablab')
+  const want = String(first(p.sources) || 'luma,eventbrite,meetup,maven,substack,lablab,primeqe')
     .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   const limit = Math.min(Math.max(parseInt(first(p.limit), 10) || 1000, 1), 1000);
   const keep = KEEP[String(first(p.filter) || 'tech').toLowerCase()] || KEEP.tech;

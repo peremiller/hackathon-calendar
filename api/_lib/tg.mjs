@@ -43,10 +43,15 @@ export function chunk(text, limit = LIMIT) {
   if (text.length <= limit) return [text];
   const out = [];
   let buf = '';
-  for (const block of text.split('\n\n')) {
-    const piece = block.length > limit ? block.slice(0, limit) : block;
-    if (buf && buf.length + piece.length + 2 > limit) { out.push(buf); buf = piece; }
-    else buf = buf ? buf + '\n\n' + piece : piece;
+  for (const line of text.split('\n')) {
+    // Digest lines contain complete HTML tags. Never truncate a section or
+    // split a link/entity; a long exceptional line is sent as escaped text.
+    const pieces = line.length <= limit ? [line] :
+      (line.replace(/<[^>]*>/g,'').match(/.{1,900}/gu) || ['']).map(esc);
+    for (const piece of pieces) {
+      if (buf && buf.length + piece.length + 1 > limit) { out.push(buf); buf = piece; }
+      else buf = buf ? buf + '\n' + piece : piece;
+    }
   }
   if (buf) out.push(buf);
   return out;
