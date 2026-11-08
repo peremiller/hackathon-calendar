@@ -3,6 +3,7 @@ export const FOUNDER_FEED = 'https://primeqe-founder-operating-hub.ajmillertpere
 export function founderRecords(payload) {
   if (!Array.isArray(payload?.events)) throw new Error('Founder Hub feed format changed');
   return payload.events.filter(e => e.sourceId !== 'hackcal' && e.date && e.name).map(e => ({
+    kind: e.type === 'Hackathon' ? 'hackathon' : 'tech',
     src: 'PrimeQE Founder Hub', extId: 'primeqe:' + e.id, name: String(e.name).slice(0,250),
     start: e.date, end: e.endDate || e.date, startAt: e.startAt || null, endAt: e.endAt || null,
     tz: 'Asia/Manila', allDay: !e.startAt, fmt: /online|virtual/i.test(e.location) ? 'Online' : 'In-person',

@@ -303,6 +303,7 @@ const HACK_RE = /\b(hack[- ]?a?thon|hackfest|hack night|buildathon|build[- ]?a?t
 const TECH_RE = /\b(ai|ml|machine learning|llm|agent|genai|dev(?:eloper)?s?|engineer|coding|code|software|startup|founder|web3|crypto|blockchain|solidity|data|cloud|devops|open ?source|api|robotics|hardware|cyber|security|saas|product|design system|tech)\b/i;
 
 function classify(e) {
+  if (e.src === 'PrimeQE Founder Hub') return e.kind || 'tech';
   const hay = (e.name + ' ' + e.hay + ' ' + e.desc);
   if (e.src === 'Maven') return 'course';
   if (HACK_RE.test(hay)) return 'hackathon';
