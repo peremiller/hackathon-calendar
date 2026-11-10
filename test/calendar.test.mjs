@@ -36,11 +36,10 @@ test('adds all recurring HackCal events and rolls past annual dates forward', ()
   assert.ok(events.every(event => event.src === 'HackCal'));
 });
 
-test('deduplicates a built-in event that is also found by a live source', () => {
-  const live = { id: 'live', name: 'TreeHacks', start: '2027-02-12', src: 'Luma' };
-  const builtIn = { id: 'seed', name: 'TreeHacks', start: '2027-02-12', src: 'HackCal' };
-
-  assert.deepEqual(uniqueEvents([live, builtIn]), [live]);
+test('deduplicates exact source identities without merging separate sessions', () => {
+  const one = {name:'AI Workshop',extId:'one',start:'2026-11-12'};
+  const later = {...one,extId:'two',startAt:'2026-11-12T20:00:00Z'};
+  assert.deepEqual(uniqueEvents([one, {...one}, later]), [one, later]);
 });
 
 test('builds a Google-compatible all-day calendar with an exclusive end date', () => {

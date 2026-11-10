@@ -83,7 +83,7 @@ export const runsOn = (e, day, tz = 'Asia/Manila') => {
 };
 
 export function partition(events, today, tomorrow, region, tz = 'Asia/Manila') {
-  const keep = events.filter(e => inRegion(e, region));
+  const keep = events.filter(e => !e.needsVerification && inRegion(e, region));
   const byDay = d => keep
     .filter(e => runsOn(e, d, tz))
     .sort((a, b) => (a.start === b.start ? 0 : a.start < b.start ? -1 : 1) ||

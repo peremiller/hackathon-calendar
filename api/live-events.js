@@ -91,19 +91,24 @@ export const isCurrentOrFuture = (e, today = manilaDateKey(), now = new Date()) 
 };
 
 // Does an ISO-ish string carry a clock time, or is it a bare calendar date?
+const validDay = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value)) && Number.isFinite(new Date(value).getTime()) && new Date(value).toISOString().slice(0,10) === value;
 const hasClock = s => typeof s === 'string' && /T\d{2}:\d{2}/.test(s);
 
 function mk({ src, extId, name, start, end, fmt, loc, url, desc, hay,
              startAt, endAt, tz, allDay }) {
   name = clean(name).slice(0, 110);
-  if (!name || !start) return null;
+  if (!name || !validDay(start) || (end && (!validDay(end) || end < start))) return null;
+  try { if (new URL(url).protocol !== 'https:') return null; } catch { return null; }
+  const timed = hasClock(startAt);
+  const needsVerification = timed && (!absoluteInstant(startAt) || !absoluteInstant(endAt) || new Date(endAt) <= new Date(startAt));
   return {
     // startAt/endAt keep the full instant alongside the calendar date, so
     // consumers can show a time of day; `start`/`end` stay date-only because
     // the calendar grid and all the filtering key off them.
     startAt: hasClock(startAt) ? startAt : null,
     endAt: hasClock(endAt) ? endAt : null,
-    tz: tz || null,
+    tz: tz || null, needsVerification,
+    timeStatus: !timed ? 'date_only' : needsVerification ? 'unconfirmed_time_or_timezone' : 'absolute',
     allDay: allDay != null ? !!allDay : !hasClock(startAt),
     src, extId, name, start, end: end && end >= start ? end : start,
     fmt: fmt || 'Online', loc: clean(loc).slice(0, 70) || 'See event page',
@@ -172,7 +177,7 @@ function ldBlocks(html) {
   let m; while ((m = re.exec(html))) { try { out.push(JSON.parse(m[1])); } catch (_) { } }
   return out;
 }
-function schemaEvent(it, src, idPrefix) {
+export function schemaEvent(it, src, idPrefix) {
   if (!it || !/Event/.test(it['@type'] || '')) return null;
   const online = /Online/i.test(it.eventAttendanceMode || '') ||
     /VirtualLocation/i.test((it.location && it.location['@type']) || '');
@@ -180,14 +185,14 @@ function schemaEvent(it, src, idPrefix) {
   const addr = L.address || {};
   const place = clean([L.name, addr.addressLocality, addr.addressRegion, addr.addressCountry]
     .filter(v => v && typeof v === 'string').join(', '));
-  const tz = it.startDate && /[Z+]/.test(String(it.startDate).slice(10)) ? 'UTC' : null;
+  if (/EventCancelled|EventPostponed/.test(it.eventStatus || '')) return null;
   return mk({
     src, extId: idPrefix + (it.url || it.name), name: it.name,
-    start: tz ? localDate(it.startDate, 'UTC') : String(it.startDate || '').slice(0, 10),
-    end: it.endDate ? (tz ? localDate(it.endDate, 'UTC') : String(it.endDate).slice(0, 10)) : null,
+    start: String(it.startDate || '').slice(0, 10),
+    end: it.endDate ? String(it.endDate).slice(0, 10) : null,
     // schema.org dates embed their own offset, so the wall clock is readable
     // straight off the string — no IANA zone is published to go with it.
-    startAt: it.startDate, endAt: it.endDate || it.startDate, tz: null,
+    startAt: it.startDate, endAt: it.endDate || null, tz: null,
     fmt: online ? 'Online' : (place ? 'In-person' : 'Online'),
     loc: online ? 'Online / Virtual' : (place || 'See event page'),
     url: it.url || '', desc: it.description, hay: place
@@ -253,6 +258,10 @@ async function maven(queries, deadline) {
   const d = nextData(r.text || '');
   const items = (d && d.props && d.props.pageProps && d.props.pageProps.courses
     && d.props.pageProps.courses.items) || [];
+  return parseMavenCourses(items);
+}
+
+export function parseMavenCourses(items) {
   const out = [];
   for (const it of items) {
     const c = it.course || {}, ch = it.next_live_cohort || {}, sch = it.school || {};
@@ -264,7 +273,7 @@ async function maven(queries, deadline) {
     // query doesn't apply here, so every upcoming live cohort is returned and the
     // relevance pass below decides what survives.
     const ev = mk({
-      src: 'Maven', extId: 'maven:' + (c.id || c.slug),
+      src: 'Maven', extId: `maven:${c.id || c.slug}:cohort:${ch.id || ch.start_date}`,
       name: name + (instr ? ' — ' + clean(instr) : ''),
       start: localDate(ch.start_date, sch.timezone || 'UTC'),
       end: localDate(ch.end_date || ch.start_date, sch.timezone || 'UTC'),
@@ -275,6 +284,10 @@ async function maven(queries, deadline) {
       hay: tags + ' course cohort'
     });
     if (ev) {
+      ev.legacyExtId = 'maven:' + (c.id || c.slug);
+      ev.cohortId = ch.id || null; ev.cohortSlug = ch.slug || null;
+      ev.dateSemantic = 'cohort_period';
+      ev.desc = `Cohort period; individual session dates require the organizer schedule. ${ev.desc}`.slice(0, 300);
       const dl = ch.attrs && ch.attrs.application_deadline;
       if (dl) ev.regClose = localDate(dl, sch.timezone || 'UTC');
       out.push(ev);
@@ -386,7 +399,7 @@ export async function collectLiveEvents(params = {}) {
     if (!isCurrentOrFuture(e)) continue;
     e.kind = classify(e);
     if (!keep(e.kind)) continue;
-    const k = e.name.toLowerCase().replace(/[^a-z0-9]/g, '') + '|' + e.start;
+    const k = e.extId || `${e.url || e.name}|${e.startAt || e.start}|${e.endAt || e.end}`;
     if (!seen.has(k)) seen.set(k, e);
   }
   const events = [...seen.values()].sort((a, b) => a.start.localeCompare(b.start)).slice(0, limit);

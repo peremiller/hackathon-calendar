@@ -27,7 +27,7 @@ export function uniqueEvents(events) {
   const unique = new Map();
   for (const event of Array.isArray(events) ? events : []) {
     if (!event || !event.name || !event.start) continue;
-    const key = `${event.name.toLowerCase().replace(/[^a-z0-9]/g, '')}|${event.start}`;
+    const key = event.extId || `${event.url || event.name}|${event.startAt || event.start}|${event.endAt || event.end}`;
     if (!unique.has(key)) unique.set(key, event);
   }
   return [...unique.values()];
@@ -71,6 +71,7 @@ export function buildCalendar(events, options = {}) {
   ];
 
   for (const event of events) {
+    if (event.needsVerification) continue;
     const end = event.end && event.end >= event.start ? event.end : event.start;
     const startStamp = !event.allDay && utcStamp(event.startAt);
     const endStamp = !event.allDay && utcStamp(event.endAt);

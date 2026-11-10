@@ -71,14 +71,12 @@ export function parseLablabDirectory(html, now = new Date()) {
     const path = item.path, slug = item.slug.toLowerCase();
     if (slugs.has(slug)) continue;
     slugs.add(slug);
-    const card = text(item.raw).replace(/#{1,6}\s*/g, '');
-    let date = parseDateRange(card, now);
-    const referenceYear = new Date(now).getUTCFullYear();
-    // The card places its participant count immediately after the compact date
-    // (for example "SEP 10 - 17 2084"). Do not mistake that count for a year.
-    if (date && Math.abs(Number(date.start.slice(0, 4)) - referenceYear) > 3) {
-      date = parseDateRange(card.replace(/\b20\d{2}\b/, ' '), now);
-    }
+    // A trailing participant count is a separate field, never an event year.
+    const dateRaw = item.raw.replace(/<span\b[^>]*>\s*\d{3,}\s*<\/span>/gi, ' ')
+      .replace(/\s+\d{3,}\s+(?=#{1,6})/g, ' ');
+    const card = text(dateRaw).replace(/#{1,6}\s*/g, '');
+    const date = parseDateRange(card, now);
+    const hasExplicitYear = /\b20\d{2}\b/.test(card);
     // A calendar cannot plot a TBA item truthfully. It will be picked up on a
     // later refresh as soon as lablab publishes an actual range.
     if (!date || date.end < floor) continue;
@@ -90,7 +88,8 @@ export function parseLablabDirectory(html, now = new Date()) {
     events.push({
       src: 'lablab.ai', extId: `lablab:${slug}`, name,
       start: date.start, end: date.end, startAt: null, endAt: null,
-      tz: null, allDay: true, fmt: format, loc: eventLocation(card, format),
+      tz: null, allDay: true, needsVerification: !hasExplicitYear,
+      dateSemantic: 'hackathon_period', dateNote: hasExplicitYear ? 'Official hackathon period; exact deadline time unconfirmed.' : 'Year absent from source card; organizer verification required.', fmt: format, loc: eventLocation(card, format),
       url: new URL(path, DIRECTORY_URL).href,
       desc: description.slice(0, 260),
       hay: `${card} lablab.ai AI developer hackathon`.slice(0, 600)
@@ -119,7 +118,7 @@ export function parseLablabCalendar(html) {
         start: String(item.startDate).slice(0, 10),
         end: String(item.endDate || item.startDate).slice(0, 10),
         startAt: item.startDate, endAt: item.endDate || item.startDate,
-        tz: null, allDay: false, fmt: online ? 'Online' : 'Hybrid',
+        tz: null, allDay: false, fmt: online ? 'Online' : 'In-person',
         loc: online ? 'Online / Virtual' : (place || 'Online + on-site (see event page)'),
         url: item.url || item['@id'] || CALENDAR_URL,
         desc: 'Official event published on the lablab.ai events calendar.',
@@ -146,25 +145,11 @@ export async function fetchLablabEvents({ grab, deadline = Infinity, now = new D
   const calendar = calendarResponse && calendarResponse.ok
     ? parseLablabCalendar(calendarResponse.text) : [];
   const seen = new Map();
-  const eventKey = name => {
-    const value = text(name);
-    const core = (value.match(/^(.*?\bhackathon)\b/i) || [null, value])[1];
-    return core.toLowerCase().replace(/[^a-z0-9]/g, '');
-  };
-  // Prefer the lablab directory's full online-build range when an event is also
-  // present on Luma, whose listing may cover only the on-site phase.
+  // Same names can describe separate online build and on-site phases. Keep
+  // each date range attached to the page that actually published that range.
   for (const event of [...directory, ...calendar]) {
-    const key = eventKey(event.name);
-    if (!seen.has(key)) {
-      seen.set(key, event);
-      continue;
-    }
-    const current = seen.get(key);
-    // Directory cards include the online build phase; Luma can include a later
-    // on-site finale. Preserve the earliest start and latest published end.
-    if (event.start < current.start) current.start = event.start;
-    if (event.end > current.end) current.end = event.end;
-    if (/see event page/i.test(current.loc || '') && event.loc) current.loc = event.loc;
+    const key = event.name.toLowerCase().replace(/[^a-z0-9]/g, '') + '|' + event.start + '|' + event.end;
+    if (!seen.has(key)) seen.set(key, event);
   }
   if (!seen.size) {
     const status = [directoryResponse, calendarResponse].map(r => r && r.status).filter(Boolean).join('/');

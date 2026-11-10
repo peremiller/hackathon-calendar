@@ -6,7 +6,8 @@ export function founderRecords(payload) {
     kind: e.type === 'Hackathon' ? 'hackathon' : 'tech',
     src: 'PrimeQE Founder Hub', extId: 'primeqe:' + e.id, name: String(e.name).slice(0,250),
     start: e.date, end: e.endDate || e.date, startAt: e.startAt || null, endAt: e.endAt || null,
-    tz: 'Asia/Manila', allDay: !e.startAt, fmt: /online|virtual/i.test(e.location) ? 'Online' : 'In-person',
+    tz: e.sourceTimezone || e.timezone || e.tz || 'Asia/Manila', allDay: !e.startAt,
+    needsVerification: Boolean(e.needsVerification), dateSemantic: e.dateSemantic || null, dateNote: e.dateNote || '', fmt: /online|virtual/i.test(e.location) ? 'Online' : 'In-person',
     loc: e.location || 'See organizer', url: e.url || '', desc: e.description || '',
     hay: [e.name,e.description,e.type,...(e.topics || [])].join(' '), regClose: e.deadline || ''
   }));

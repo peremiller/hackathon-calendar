@@ -31,7 +31,9 @@ test('extracts multiple dated tech events from a Substack RSS item', () => {
     ['Manila Developer Conference', '2026-09-04', '2026-09-05', 'Substack']
   ]);
   assert.equal(events[0].fmt, 'Online');
-  assert.equal(events[0].startAt, '2026-08-31T09:00:00');
+  assert.equal(events[0].startAt, null);
+  assert.equal(events[0].needsVerification, true);
+  assert.equal(events[0].url, 'https://events.example.com/ai-summit');
   assert.equal(events[1].url, 'https://events.example.com/devcon');
 });
 

@@ -56,11 +56,11 @@ test('adds newly dated lablab events from its official Luma calendar', () => {
   const events = parseLablabCalendar(html);
 
   assert.deepEqual(events.map(event => [event.name, event.start, event.end, event.fmt]), [
-    ['AI GENESIS', '2026-11-02', '2026-11-03', 'Hybrid'],
+    ['AI GENESIS', '2026-11-02', '2026-11-03', 'In-person'],
   ]);
 });
 
-test('combines the directory and official calendar without duplicate cross-posts', async () => {
+test('keeps directory build periods and separate calendar phases without extending either range', async () => {
   const markdown = `[![Image 1: AI Infra Summit Hackathon](https://img.example/infra.jpg) Register Hybrid SEP 10 - 17 2084 ## AI Infra Summit Hackathon](https://lablab.ai/ai-hackathons/ai-infra-summit-hackathon)
 
 [![Image 2: TechEx Amsterdam Hackathon - AI & Big Data Expo Europe](https://img.example/techex.jpg) Register Hybrid OCT 16 - 19 ## TechEx Amsterdam Hackathon - AI & Big Data Expo Europe](https://lablab.ai/ai-hackathons/techex-amsterdam-hackathon)`;
@@ -73,7 +73,11 @@ test('combines the directory and official calendar without duplicate cross-posts
   assert.deepEqual(events.map(event => [event.name, event.start]), [
     ['AI Infra Summit Hackathon', '2026-09-10'],
     ['TechEx Amsterdam Hackathon - AI & Big Data Expo Europe', '2026-10-16'],
+    ['AI Infra Summit Hackathon', '2026-09-15'],
+    ['TechEx Amsterdam Hackathon', '2026-10-19'],
     ['AI GENESIS', '2026-11-02'],
   ]);
-  assert.equal(events[1].end, '2026-10-20');
+  assert.equal(events[1].end, '2026-10-19');
+  assert.equal(events[3].end, '2026-10-20');
+  assert.equal(events[0].needsVerification, true);
 });

@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     });
     const today = manilaDateKey();
     const events = futureStartingEvents(
-      uniqueEvents(payload.events),
+      uniqueEvents(payload.events.filter(e => !e.needsVerification)),
       today,
     );
     const calendar = buildCalendar(events, {

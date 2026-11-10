@@ -121,25 +121,32 @@ function goodTitle(s) {
   if (parseDateRange(s) && s.replace(/\d|\W/g, '').length < 5) return null;
   return s;
 }
-function chooseTitle(bs, i, itemTitle) {
-  const here = bs[i];
-  const direct = [...here.links.map(l => l.label), ...here.emph].map(goodTitle).find(Boolean);
-  if (direct) return direct;
-  for (const n of [i - 1, i + 1, i - 2]) {
-    const b = bs[n]; if (!b) continue;
-    const candidate = [...b.links.map(l => l.label), ...b.emph, b.text].map(goodTitle).find(Boolean);
-    if (candidate && !parseDateRange(candidate)) return candidate;
+// Keep title, date and registration link inside one event section. Never
+// choose them independently from adjacent rows in a newsletter.
+function candidate(bs, i, itemTitle, postUrl) {
+  const here=bs[i];
+  const direct=[...here.links.map(l=>l.label),...here.emph].map(goodTitle).find(Boolean);
+  let group=[here], name=direct;
+  if(!name){
+    const prev=bs[i-1];
+    if(!prev || !/<h[1-6]\b/i.test(prev.raw)) return null;
+    name=[...prev.links.map(l=>l.label),...prev.emph,prev.text].map(goodTitle).find(Boolean);
+    if(!name)return null;
+    group=[prev,here];
   }
-  return goodTitle(itemTitle);
-}
-function chooseUrl(bs, i, postUrl) {
-  for (const n of [i, i - 1, i + 1]) {
-    for (const link of (bs[n] && bs[n].links) || []) {
-      if (/unsubscribe|publication-login|\/subscribe|mailto:/i.test(link.href)) continue;
-      try { return new URL(link.href, postUrl).href; } catch (_) { /* keep looking */ }
-    }
+  for(let n=i+1;n<Math.min(bs.length,i+4);n++){
+    const next=bs[n];
+    if(/<h[1-6]\b/i.test(next.raw))break;
+    // An independently named/date-bearing row begins another event.
+    const named=next.links.some(l=>goodTitle(l.label)&&!/^(registration link|register|register now|rsvp|sign up|apply|tickets?|details|learn more)$/i.test(l.label));
+    if(named||parseDateRange(next.text))break;
+    group.push(next);
   }
-  return postUrl;
+  const links=group.flatMap(b=>b.links);
+  const selected=links.find(l=>goodTitle(l.label)===name)||links.find(l=>/^(registration link|register|register now|rsvp|sign up|apply|tickets?|details|learn more)$/i.test(l.label));
+  let url=postUrl;
+  if(selected){try{const u=new URL(selected.href,postUrl);if(u.protocol==='https:')url=u.href;}catch{}}
+  return {name,url,context:group.map(b=>b.text).join(' · ')};
 }
 function clock(value, start) {
   const m = text(value).match(/\b(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)\b/i);
@@ -173,20 +180,21 @@ export function parseSubstackFeed(xml, feed = {}, now = new Date()) {
     for (let i = 0; i < bs.length; i++) {
       const date = parseDateRange(bs[i].text, pubDate);
       if (!date || date.end < floor) continue;
-      const context = [bs[i - 1] && bs[i - 1].text, bs[i].text, bs[i + 1] && bs[i + 1].text]
-        .filter(Boolean).join(' · ');
-      const name = chooseTitle(bs, i, itemTitle);
-      if (!name) continue;
+      const matched = candidate(bs, i, itemTitle, postUrl);
+      if (!matched) continue;
+      const {name, url, context} = matched;
       const relevant = feed.eventFocused !== false || EVENT_RE.test(context + ' ' + name) ||
         (EVENT_RE.test(itemTitle) && TECH_RE.test(context + ' ' + name + ' ' + channelName));
       if (!relevant || /subscribe|sponsor|advertis/i.test(name)) continue;
       const loc = location(context, feed.loc);
-      const startAt = clock(context, date.start);
-      const url = chooseUrl(bs, i, postUrl);
+      // A newsletter clock without an explicit zone is evidence, not an instant.
+      const startAt = null;
       out.push({
         src: 'Substack', extId: `substack:${idFor(`${url}|${name}|${date.start}`)}`,
         name: name.slice(0, 110), start: date.start, end: date.end,
-        startAt, endAt: null, tz: null, allDay: !startAt,
+        startAt, endAt: null, tz: null, allDay: true, needsVerification: true,
+        timeStatus: 'organizer_verification_required', sourcePostUrl: postUrl,
+        dateNote: 'Newsletter lead; verify the event title, date, year and time zone with its organizer before scheduling.',
         fmt: loc === 'Online / Virtual' ? 'Online' : 'In-person', loc,
         url, desc: context.slice(0, 260),
         hay: `${channelName} ${itemTitle} ${context} Substack tech event`.slice(0, 600)
@@ -208,6 +216,7 @@ export async function fetchSubstackEvents({ grab, deadline = Infinity, now = new
     if (Date.now() > deadline) return [];
     const r = await grab(feed.url);
     if (!r || !r.ok) throw new Error(`${feed.name} returned HTTP ${(r && r.status) || 'unknown'}`);
+    if (!/<rss\b|<feed\b/i.test(r.text || '')) throw new Error(`${feed.name} returned no RSS feed`);
     return parseSubstackFeed(r.text, feed, now);
   }));
   const events = [], failures = [];

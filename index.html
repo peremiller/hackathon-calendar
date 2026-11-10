@@ -913,7 +913,8 @@ function renderDetail(){
     <div style="color:var(--cyan);font-weight:700;font-size:13px">${status}</div>
     ${(rs=>`<div style="margin-top:8px"><span class="reg ${rs.cls}">${rs.label}</span></div>`)(regStatus(e))}
     <div class="det-row"><span class="k">Dates${e.startAt?' (PHT)':''}</span><span>${fmtDate(e.start)}${e.start!==e.end?' – '+fmtDate(e.end):''}${e.dateConf==='typical'?' <span style="color:var(--muted);font-size:12px">(≈ typical schedule — verify on site)</span>':''}</span></div>
-    ${e.startAt?`<div class="det-row"><span class="k">Time</span><span>${esc(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',dateStyle:'medium',timeStyle:'short'}).format(new Date(e.startAt)))} PHT${e.tz?'<br>Venue: '+esc(new Intl.DateTimeFormat('en-US',{timeZone:e.tz,dateStyle:'medium',timeStyle:'short'}).format(new Date(e.startAt)))+' '+esc(e.tz):''}</span></div>`:''}
+    ${e.dateNote||e.needsVerification?`<div class="det-row"><span class="k">Date evidence</span><span>${esc(e.dateNote||'Organizer verification required before scheduling.')}</span></div>`:''}
+    ${e.startAt&&!e.needsVerification?`<div class="det-row"><span class="k">Time</span><span>${esc(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',dateStyle:'medium',timeStyle:'short'}).format(new Date(e.startAt)))} PHT${e.tz?'<br>Venue: '+esc(new Intl.DateTimeFormat('en-US',{timeZone:e.tz,dateStyle:'medium',timeStyle:'short'}).format(new Date(e.startAt)))+' '+esc(e.tz):''}</span></div>`:''}
     ${e.regClose?`<div class="det-row"><span class="k">Reg. deadline</span><span>${fmtDate(e.regClose)}</span></div>`:''}
     <div class="det-row"><span class="k">Who can join</span><span>${e.eligibility==='Students'?'<i class="ph ph-student" aria-hidden="true"></i> Students only':'<i class="ph ph-users" aria-hidden="true"></i> Open to all (non-students welcome)'}</span></div>
     <div class="det-row"><span class="k">Format</span><span><span class="tag fmt" style="background:${evColor(e)}">${e.fmt}</span></span></div>
@@ -983,7 +984,7 @@ function saveForm(id){
 function icsDate(iso){return iso.replace(/-/g,'')}
 function icsForEvents(evs){
   let out='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//HackCal//EN\r\nCALSCALE:GREGORIAN\r\n';
-  evs.forEach(e=>{
+  evs.filter(e=>!e.needsVerification).forEach(e=>{
     const endNext=new Date(e.end+'T00:00'); endNext.setDate(endNext.getDate()+1);
     const dtend=`${endNext.getFullYear()}${pad(endNext.getMonth()+1)}${pad(endNext.getDate())}`;
     out+='BEGIN:VEVENT\r\n';
@@ -1008,7 +1009,7 @@ function downloadFile(name,text){
   const b=new Blob([text],{type:'text/calendar'}); const u=URL.createObjectURL(b);
   const a=document.createElement('a'); a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u);
 }
-function downloadICS(id){const e=data.find(x=>x.id===id); downloadFile(slug(e.name)+'.ics',icsForEvents([e]))}
+function downloadICS(id){const e=data.find(x=>x.id===id);if(e.needsVerification){toast('Verify the date and time with the organizer before adding this lead to your calendar.');return} downloadFile(slug(e.name)+'.ics',icsForEvents([e]))}
 function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
 function syncGoogleCalendar(){
   const feed=new URL('/api/calendar-feed',location.origin).href;
@@ -1193,6 +1194,8 @@ function parseICS(raw,source){
       : (fmt==='Online' ? 'Online / Virtual' : 'TBD');
     events.push({id:uid(),extId:get('UID')?('ics:'+get('UID')):undefined,name:summary.slice(0,90),start,end,fmt,loc:displayLoc,
       startAt,endAt,tz:startAt?'UTC':null,allDay:dateOnly,
+      needsVerification:!dateOnly&&(!startAt||!endAt),
+      dateNote:!dateOnly&&(!startAt||!endAt)?'Time zone or end time requires organizer verification.':'',
       tags:pickTags(hay),url,regClose:pickRegClose(desc)||'',
       eligibility:pickElig(hay),dateConf:'confirmed',
       desc:(desc||summary).replace(/\s+/g,' ').trim().slice(0,240),src:source||'Luma'});
@@ -1359,7 +1362,7 @@ function fromLive(r){
     start:!r.allDay&&r.startAt&&/(Z|[+-]\d{2}:?\d{2})$/.test(r.startAt)?phtDate(r.startAt):r.start,
     end:!r.allDay&&r.endAt&&/(Z|[+-]\d{2}:?\d{2})$/.test(r.endAt)?phtDate(r.endAt):(r.end||r.start),
     startAt:r.startAt||null,endAt:r.endAt||null,tz:r.tz||null,allDay:r.allDay,
-    sourceStart:r.start,sourceEnd:r.end||r.start,
+    sourceStart:r.start,sourceEnd:r.end||r.start,needsVerification:!!r.needsVerification,dateNote:r.dateNote||'',dateSemantic:r.dateSemantic||'',legacyExtId:r.legacyExtId||null,cohortId:r.cohortId||null,
     fmt:r.fmt||'Online', loc:r.loc||'See event page',
     tags:pickTags(hay), url:r.url||'',
     regClose:r.regClose||pickRegClose(r.desc||'')||'',
@@ -1379,15 +1382,15 @@ function upsertLive(records){
   for(const r of records){
     if(!r||!r.name||!r.start) continue;
     const ev=fromLive(r);
-    const cur=byExt.get(ev.extId)||data.find(e=>!e.extId&&e.url&&e.url===ev.url&&(e.start===ev.start||e.start===ev.sourceStart));
+    const cur=byExt.get(ev.extId)||(ev.legacyExtId&&data.find(e=>e.extId===ev.legacyExtId&&(e.startAt===ev.startAt||e.start===ev.start||e.start===ev.sourceStart)))||data.find(e=>!e.extId&&e.url&&e.url===ev.url&&(e.start===ev.start||e.start===ev.sourceStart));
     if(cur){
       const changed = cur.start!==ev.start||cur.end!==ev.end||cur.name!==ev.name||
                       cur.loc!==ev.loc||cur.fmt!==ev.fmt||cur.url!==ev.url||
-                      cur.startAt!==ev.startAt||cur.endAt!==ev.endAt||cur.tz!==ev.tz||cur.allDay!==ev.allDay;
+                      cur.startAt!==ev.startAt||cur.endAt!==ev.endAt||cur.tz!==ev.tz||cur.allDay!==ev.allDay||cur.needsVerification!==ev.needsVerification||cur.dateNote!==ev.dateNote||cur.dateSemantic!==ev.dateSemantic||cur.extId!==ev.extId;
       if(changed){
         byKey.delete(evKey(cur));
         Object.assign(cur,{extId:ev.extId,name:ev.name,start:ev.start,end:ev.end,fmt:ev.fmt,
-          startAt:ev.startAt,endAt:ev.endAt,tz:ev.tz,allDay:ev.allDay,sourceStart:ev.sourceStart,sourceEnd:ev.sourceEnd,
+          startAt:ev.startAt,endAt:ev.endAt,tz:ev.tz,allDay:ev.allDay,sourceStart:ev.sourceStart,sourceEnd:ev.sourceEnd,needsVerification:ev.needsVerification,dateNote:ev.dateNote,dateSemantic:ev.dateSemantic,legacyExtId:ev.legacyExtId,cohortId:ev.cohortId,
           loc:ev.loc,url:ev.url,desc:ev.desc,tags:ev.tags,regClose:ev.regClose});
         byKey.add(evKey(cur)); updated++;
       }
