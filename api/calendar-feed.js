@@ -1,5 +1,4 @@
 import { buildCalendar, futureStartingEvents, uniqueEvents } from './_lib/calendar.mjs';
-import { hackCalSeedEvents } from './_lib/seeds.mjs';
 import { collectLiveEvents, manilaDateKey } from './live-events.js';
 
 export default async function handler(req, res) {
@@ -17,7 +16,7 @@ export default async function handler(req, res) {
     });
     const today = manilaDateKey();
     const events = futureStartingEvents(
-      uniqueEvents([...payload.events, ...hackCalSeedEvents(today)]),
+      uniqueEvents(payload.events),
       today,
     );
     const calendar = buildCalendar(events, {

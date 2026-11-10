@@ -473,6 +473,7 @@ const uid=()=>{
   return 'id-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);
 };
 const phtParts=date=>Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date).filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
+const phtDate=iso=>{const p=phtParts(new Date(iso));return `${p.year}-${p.month}-${p.day}`};
 const todayISO=()=>{const p=phtParts(new Date());return `${p.year}-${p.month}-${p.day}`};
 const isUpcoming=(event,today=todayISO())=>Boolean(event&&event.start&&event.start>=today);
 const shiftISO=(iso,days)=>{const d=new Date(iso+'T12:00:00+08:00');d.setUTCDate(d.getUTCDate()+days);return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`};
@@ -486,7 +487,7 @@ function seed(){
     if(`${Y}-${pad(m)}-${pad(d)}` < today) yr=Y+1;
     const s=`${yr}-${pad(m)}-${pad(d)}`;
     return {id:uid(),name,start:s,end:shiftISO(s,len-1),regClose:shiftISO(s,-4),
-      fmt,loc,tags,url,desc,dateConf:conf||'typical',eligibility:elig||'Everyone',seed:true};
+      fmt,loc,tags,url,desc,dateConf:'typical',eligibility:elig||'Everyone',seed:true};
   };
   return [
     mk('MLH Global Hack Week',7,13,7,'Online','Global / Virtual',['AI/ML','Open Source','DevTools'],'https://ghw.mlh.com/','Major League Hacking’s beginner-friendly week-long online event (successor to Local Hack Day).','typical','Everyone'),
@@ -911,7 +912,8 @@ function renderDetail(){
     <h2>${esc(e.name)}</h2>
     <div style="color:var(--cyan);font-weight:700;font-size:13px">${status}</div>
     ${(rs=>`<div style="margin-top:8px"><span class="reg ${rs.cls}">${rs.label}</span></div>`)(regStatus(e))}
-    <div class="det-row"><span class="k">Dates</span><span>${fmtDate(e.start)}${e.start!==e.end?' – '+fmtDate(e.end):''}${e.dateConf==='typical'?' <span style="color:var(--muted);font-size:12px">(≈ typical schedule — verify on site)</span>':''}</span></div>
+    <div class="det-row"><span class="k">Dates${e.startAt?' (PHT)':''}</span><span>${fmtDate(e.start)}${e.start!==e.end?' – '+fmtDate(e.end):''}${e.dateConf==='typical'?' <span style="color:var(--muted);font-size:12px">(≈ typical schedule — verify on site)</span>':''}</span></div>
+    ${e.startAt?`<div class="det-row"><span class="k">Time</span><span>${esc(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',dateStyle:'medium',timeStyle:'short'}).format(new Date(e.startAt)))} PHT${e.tz?'<br>Venue: '+esc(new Intl.DateTimeFormat('en-US',{timeZone:e.tz,dateStyle:'medium',timeStyle:'short'}).format(new Date(e.startAt)))+' '+esc(e.tz):''}</span></div>`:''}
     ${e.regClose?`<div class="det-row"><span class="k">Reg. deadline</span><span>${fmtDate(e.regClose)}</span></div>`:''}
     <div class="det-row"><span class="k">Who can join</span><span>${e.eligibility==='Students'?'<i class="ph ph-student" aria-hidden="true"></i> Students only':'<i class="ph ph-users" aria-hidden="true"></i> Open to all (non-students welcome)'}</span></div>
     <div class="det-row"><span class="k">Format</span><span><span class="tag fmt" style="background:${evColor(e)}">${e.fmt}</span></span></div>
@@ -986,8 +988,13 @@ function icsForEvents(evs){
     const dtend=`${endNext.getFullYear()}${pad(endNext.getMonth()+1)}${pad(endNext.getDate())}`;
     out+='BEGIN:VEVENT\r\n';
     out+=`UID:${e.id}@hackcal\r\n`;
-    out+=`DTSTART;VALUE=DATE:${icsDate(e.start)}\r\n`;
-    out+=`DTEND;VALUE=DATE:${dtend}\r\n`;
+    if(!e.allDay&&e.startAt&&e.endAt&&/(Z|[+-]\d{2}:?\d{2})$/.test(e.startAt)&&/(Z|[+-]\d{2}:?\d{2})$/.test(e.endAt)){
+      const stamp=v=>new Date(v).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
+      out+=`DTSTART:${stamp(e.startAt)}\r\nDTEND:${stamp(e.endAt)}\r\n`;
+    }else{
+      out+=`DTSTART;VALUE=DATE:${icsDate(e.start)}\r\n`;
+      out+=`DTEND;VALUE=DATE:${dtend}\r\n`;
+    }
     out+=`SUMMARY:${icsEsc(e.name)}\r\n`;
     out+=`LOCATION:${icsEsc(e.loc)}\r\n`;
     out+=`DESCRIPTION:${icsEsc((e.fmt+' · '+e.tags.join(', ')+(e.desc?' — '+e.desc:'')+(e.url?'\\n'+e.url:'')))}\r\n`;
@@ -1147,6 +1154,13 @@ function parseEvents(raw,source){
 /* ---- iCalendar (.ics) parsing — for Luma, Google Calendar, Meetup, Eventbrite… ---- */
 const icsUnesc=s=>String(s||'').replace(/\\n/gi,' ').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\').trim();
 const icsToISO=v=>{const m=(v||'').match(/(\d{4})(\d{2})(\d{2})/);return m?`${m[1]}-${m[2]}-${m[3]}`:null;};
+// Absolute UTC iCalendar clocks survive import; date-only records stay all day.
+function icsInstant(raw){
+  const m=String(raw||'').match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/);
+  if(!m)return null;
+  const iso=`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}Z`;
+  return Number.isNaN(new Date(iso).getTime())?null:iso;
+}
 function isICS(t){return /BEGIN:VCALENDAR/i.test(t||'')}
 function parseICS(raw,source){
   const unfolded=String(raw||'').replace(/\r\n/g,'\n').replace(/\n[ \t]/g,''); // RFC5545 line unfolding
@@ -1156,8 +1170,9 @@ function parseICS(raw,source){
     const get=name=>{const m=b.match(new RegExp('(?:^|\\n)'+name+'(;[^:\\n]*)?:(.*)','i'));return m?m[2].trim():'';};
     const summary=icsUnesc(get('SUMMARY')); if(!summary) continue;
     const dtStartRaw=get('DTSTART'), dtEndRaw=get('DTEND');
-    const start=icsToISO(dtStartRaw); if(!start) continue;
-    let end=icsToISO(dtEndRaw)||start;
+    const startAt=icsInstant(dtStartRaw),endAt=icsInstant(dtEndRaw);
+    const start=startAt?phtDate(startAt):icsToISO(dtStartRaw); if(!start) continue;
+    let end=endAt?phtDate(endAt):(icsToISO(dtEndRaw)||start);
     const startLine=(b.match(/(?:^|\n)DTSTART[^:\n]*/i)||[''])[0];
     const dateOnly=/VALUE=DATE\b/i.test(startLine)||/^\d{8}$/.test(dtStartRaw);
     if(dateOnly && end>start){const d=new Date(end);d.setDate(d.getDate()-1);end=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;} // all-day DTEND is exclusive
@@ -1176,7 +1191,8 @@ function parseICS(raw,source){
     const displayLoc = physicalLoc ? loc.slice(0,60)
       : (locIsUrl || hasGeo) ? 'See event page'
       : (fmt==='Online' ? 'Online / Virtual' : 'TBD');
-    events.push({id:uid(),name:summary.slice(0,90),start,end,fmt,loc:displayLoc,
+    events.push({id:uid(),extId:get('UID')?('ics:'+get('UID')):undefined,name:summary.slice(0,90),start,end,fmt,loc:displayLoc,
+      startAt,endAt,tz:startAt?'UTC':null,allDay:dateOnly,
       tags:pickTags(hay),url,regClose:pickRegClose(desc)||'',
       eligibility:pickElig(hay),dateConf:'confirmed',
       desc:(desc||summary).replace(/\s+/g,' ').trim().slice(0,240),src:source||'Luma'});
@@ -1191,9 +1207,13 @@ async function fetchIcs(url){
 }
 function evKey(e){return (e.name||'').toLowerCase().replace(/[^a-z0-9]/g,'')+'|'+e.start}
 function mergeEvents(newEvs){
-  const seen=new Set(data.map(evKey)); let added=0;
-  newEvs.forEach(e=>{ const k=evKey(e); if(!seen.has(k)){data.push(e);seen.add(k);added++;} });
-  if(added) save();
+  let added=0,updated=0;
+  for(const e of newEvs){
+    const old=(e.extId&&data.find(x=>x.extId===e.extId))||data.find(x=>evKey(x)===evKey(e));
+    if(old){if(e.extId){const id=old.id;Object.assign(old,e,{id});updated++;}}
+    else{data.push(e);added++;}
+  }
+  if(added||updated) save();
   return added;
 }
 function toast(msg){
@@ -1335,7 +1355,11 @@ function saveLiveCfg(patch){
 function fromLive(r){
   const hay=[r.name,r.desc,r.loc,r.hay].filter(Boolean).join(' ');
   return {
-    id:uid(), extId:r.extId, name:r.name, start:r.start, end:r.end||r.start,
+    id:uid(), extId:r.extId, name:r.name,
+    start:!r.allDay&&r.startAt&&/(Z|[+-]\d{2}:?\d{2})$/.test(r.startAt)?phtDate(r.startAt):r.start,
+    end:!r.allDay&&r.endAt&&/(Z|[+-]\d{2}:?\d{2})$/.test(r.endAt)?phtDate(r.endAt):(r.end||r.start),
+    startAt:r.startAt||null,endAt:r.endAt||null,tz:r.tz||null,allDay:r.allDay,
+    sourceStart:r.start,sourceEnd:r.end||r.start,
     fmt:r.fmt||'Online', loc:r.loc||'See event page',
     tags:pickTags(hay), url:r.url||'',
     regClose:r.regClose||pickRegClose(r.desc||'')||'',
@@ -1355,13 +1379,15 @@ function upsertLive(records){
   for(const r of records){
     if(!r||!r.name||!r.start) continue;
     const ev=fromLive(r);
-    const cur=byExt.get(ev.extId);
+    const cur=byExt.get(ev.extId)||data.find(e=>!e.extId&&e.url&&e.url===ev.url&&(e.start===ev.start||e.start===ev.sourceStart));
     if(cur){
       const changed = cur.start!==ev.start||cur.end!==ev.end||cur.name!==ev.name||
-                      cur.loc!==ev.loc||cur.fmt!==ev.fmt||cur.url!==ev.url;
+                      cur.loc!==ev.loc||cur.fmt!==ev.fmt||cur.url!==ev.url||
+                      cur.startAt!==ev.startAt||cur.endAt!==ev.endAt||cur.tz!==ev.tz||cur.allDay!==ev.allDay;
       if(changed){
         byKey.delete(evKey(cur));
-        Object.assign(cur,{name:ev.name,start:ev.start,end:ev.end,fmt:ev.fmt,
+        Object.assign(cur,{extId:ev.extId,name:ev.name,start:ev.start,end:ev.end,fmt:ev.fmt,
+          startAt:ev.startAt,endAt:ev.endAt,tz:ev.tz,allDay:ev.allDay,sourceStart:ev.sourceStart,sourceEnd:ev.sourceEnd,
           loc:ev.loc,url:ev.url,desc:ev.desc,tags:ev.tags,regClose:ev.regClose});
         byKey.add(evKey(cur)); updated++;
       }

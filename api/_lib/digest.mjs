@@ -1,3 +1,5 @@
+import { eventDay } from './calendar.mjs';
+
 // Builds HackCal's "today + tomorrow" event digest.
 //
 // The web app keeps its events in the browser's localStorage, which a cron job
@@ -35,8 +37,7 @@ export const defaults = () => ({
 export const baseUrl = () => process.env.DIGEST_BASE_URL || PROD;
 
 /* ---------------- calendar helpers ---------------- */
-// Everything is compared as a YYYY-MM-DD string in the reader's own timezone,
-// which is how live-events.js already normalises event dates.
+// Project absolute instants to the reader's day; source dates may use venue time.
 export const dayKey = (date, tz) => new Intl.DateTimeFormat('en-CA', {
   timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit'
 }).format(date);
@@ -75,22 +76,22 @@ export function inRegion(e, region) {
 // An event counts for a day if it starts that day or straddles it. Hackathons
 // run 2-3 days, so "starts today" alone would silently drop anything already
 // under way — exactly the thing you'd still want to know about.
-export const runsOn = (e, day) => {
-  const start = e.start;
-  const end = e.end && e.end >= start ? e.end : start;
+export const runsOn = (e, day, tz = 'Asia/Manila') => {
+  const start = eventDay(e, 'start', tz);
+  const end = eventDay(e, 'end', tz) || start;
   return !!start && start <= day && end >= day;
 };
 
-export function partition(events, today, tomorrow, region) {
+export function partition(events, today, tomorrow, region, tz = 'Asia/Manila') {
   const keep = events.filter(e => inRegion(e, region));
   const byDay = d => keep
-    .filter(e => runsOn(e, d))
+    .filter(e => runsOn(e, d, tz))
     .sort((a, b) => (a.start === b.start ? 0 : a.start < b.start ? -1 : 1) ||
       a.name.localeCompare(b.name));
   // Registration deadlines landing in the window are the other time-critical
   // thing a morning message should surface.
   const closing = keep.filter(e =>
-    e.regClose && (e.regClose === today || e.regClose === tomorrow) && !runsOn(e, today));
+    e.regClose && (e.regClose === today || e.regClose === tomorrow) && !runsOn(e, today, tz));
   return { today: byDay(today), tomorrow: byDay(tomorrow), closing };
 }
 
@@ -249,9 +250,12 @@ export function timeLabel(e, readerTz) {
   const t = eventTime(e, readerTz);
   if (!t) return null;
   let s = t.end ? `${t.local}–${t.end}` : t.local;
-  // Showing the venue's clock keeps it consistent with the day it is filed
-  // under; the reader's clock is what tells them whether they can attend.
-  if (t.differs) s += ` → ${t.reader} your time`;
+  // Give the reader the converted date as well as the clock across midnight.
+  if (t.differs || eventDay(e, 'start', readerTz) !== e.start) {
+    const date = eventDay(e, 'start', readerTz);
+    s += ` → ${prettyDay(date)}, ${t.reader} ${readerTz}`;
+  }
+  if (e.tz) s = `${s} (venue: ${e.tz})`;
   return s;
 }
 
@@ -267,9 +271,10 @@ function line(e, day, tz) {
   const t = timeLabel(e, tz);
   if (t) bits.push(`🕘 ${t}`);
   bits.push(`${esc(e.loc)}`);
-  if (e.start > day) bits.push(`starts ${prettyDay(e.start)}`);
-  else if (e.end && e.end !== e.start) {
-    bits.push(e.start === day ? `runs to ${prettyDay(e.end)}` : `since ${prettyDay(e.start)}`);
+  const start = eventDay(e, 'start', tz), end = eventDay(e, 'end', tz);
+  if (start > day) bits.push(`starts ${prettyDay(start)}`);
+  else if (end && end !== start) {
+    bits.push(start === day ? `runs to ${prettyDay(end)}` : `since ${prettyDay(start)}`);
   }
   // A deadline that has already passed is noise in a "what's on now" message.
   if (e.regClose && e.regClose >= day) bits.push(`reg closes ${prettyDay(e.regClose)}`);
@@ -344,7 +349,7 @@ export async function buildDigest(opts = {}) {
   }
   events = dedupe(events);
 
-  const parts = partition(events, todayKey, tomorrowKey, region);
+  const parts = partition(events, todayKey, tomorrowKey, region, tz);
   if (days === 1) parts.tomorrow = [];
 
   const text = render(parts, {

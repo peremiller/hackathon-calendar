@@ -18,6 +18,7 @@
 // The two blocked sources are reported honestly in `sources[]` with a search URL
 // the user can open themselves, rather than silently returning nothing.
 
+import { eventDay, absoluteInstant } from './_lib/calendar.mjs';
 import { fetchSubstackEvents } from './_lib/substack.mjs';
 import { fetchLablabEvents } from './_lib/lablab.mjs';
 import { fetchFounderEvents } from './_lib/founder.mjs';
@@ -83,7 +84,11 @@ export const manilaDateKey = (date = new Date()) => new Intl.DateTimeFormat('en-
 }).format(date);
 // Keep an event while it is still running. Filtering by start date would drop a
 // multi-day event on its final day, even though it is current and actionable.
-export const isCurrentOrFuture = (e, today = manilaDateKey()) => !e.end || e.end >= today;
+export const isCurrentOrFuture = (e, today = manilaDateKey(), now = new Date()) => {
+  const end = !e.allDay && absoluteInstant(e.endAt);
+  if (end && today === manilaDateKey(now)) return end > now;
+  return !e.end || eventDay(e, 'end') >= today;
+};
 
 // Does an ISO-ish string carry a clock time, or is it a bare calendar date?
 const hasClock = s => typeof s === 'string' && /T\d{2}:\d{2}/.test(s);
