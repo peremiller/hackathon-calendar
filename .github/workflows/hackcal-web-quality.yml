@@ -1,0 +1,35 @@
+name: HackCal Web Quality
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - index.html
+      - api/ics-proxy.js
+      - test/**
+      - scripts/qa/**
+      - .github/workflows/hackcal-web-quality.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Node regression tests
+        run: npm test
+      - name: Reproducible offline build
+        run: npm run build
+      - name: Install isolated Chromium test runner
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Real Chromium keyboard, theme, responsive and data-preservation tests
+        run: node scripts/qa/browser-quality.mjs
