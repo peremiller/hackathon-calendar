@@ -52,7 +52,18 @@ try {
     assert.equal(await page.locator('#monthView').isVisible(),true);
     await page.locator('#addBtn').hover();
     assert.equal(await page.locator('#addBtn').evaluate(el=>getComputedStyle(el).cursor),'pointer');
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth<=innerWidth+2),true,
+    const overflow=await page.evaluate(() => ({
+      viewport:innerWidth,document:document.documentElement.scrollWidth,
+      offenders:[...document.querySelectorAll('body *')].filter(el=>{
+        const r=el.getBoundingClientRect();
+        return r.right>innerWidth+2 && r.left>=0 && getComputedStyle(el).position!=='fixed';
+      }).slice(0,18).map(el=>({
+        tag:el.tagName,id:el.id,cls:String(el.className).slice(0,80),
+        right:Math.round(el.getBoundingClientRect().right),scroll:el.scrollWidth,client:el.clientWidth
+      }))
+    }));
+    if(overflow.document>overflow.viewport+2) console.log('RESPONSIVE_OVERFLOW '+JSON.stringify(overflow));
+    assert.equal(overflow.document<=overflow.viewport+2,true,
       'Horizontal page overflow at '+width+'px');
     await context.close();
   }
