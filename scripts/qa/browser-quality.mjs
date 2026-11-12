@@ -31,11 +31,12 @@ try {
     assert.equal(await dialog.locator('h2').evaluate(el=>el===document.activeElement),true);
     assert.equal(await dialog.getByLabel('Name',{exact:true}).count(),1);
     assert.equal(await dialog.getByLabel('Start date').count(),1);
-    await dialog.getByLabel('Name',{exact:true}).fill('Unsaved keyboard test');
+    // Shift+Tab from the focused heading must wrap to the final dialog control.
     await page.keyboard.press('Shift+Tab');
     assert.equal(await dialog.locator('button').last().evaluate(el=>el===document.activeElement),true);
     await page.keyboard.press('Tab');
     assert.equal(await dialog.locator('button').first().evaluate(el=>el===document.activeElement),true);
+    await dialog.getByLabel('Name',{exact:true}).fill('Unsaved keyboard test');
     await page.keyboard.press('Escape');
     assert.equal(await dialog.isVisible(),false);
     assert.equal(await page.locator('#addBtn').evaluate(el=>el===document.activeElement),true);
