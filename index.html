@@ -275,6 +275,21 @@
 
   @media(max-width:1320px){.app-shell{grid-template-columns:214px minmax(0,1fr)}.side-nav{padding-inline:10px}.top-action.utility .btn-label{display:none}.top-action.utility{width:40px;padding-inline:9px}.right-rail{display:none}.app-layout{grid-template-columns:minmax(0,1fr)}}
   @media(max-width:1040px){.app-shell{display:block}.side-nav{position:static;height:auto;display:block;padding:10px 14px}.side-brand{padding:0}.side-brand small,.side-bottom,.side-spacer,.side-tech{display:none}.side-menu{margin-top:10px;flex-direction:row;overflow-x:auto}.side-link{width:auto;min-width:max-content;padding:0 13px}.app-main{width:100%}.filter-toolbar{flex-wrap:nowrap;overflow-x:auto}.filter-toolbar .search-box{min-width:220px}.filter-toolbar .filter-row{display:none}.stats{overflow-x:auto}.stat-today{min-width:280px}}
+  /* Mobile controls remain readable and wrap within the actual viewport, rather
+     than forcing the whole page to scroll sideways at 320px. The calendar grid
+     and filter strips retain their intentional independent horizontal scroll. */
+  @media(max-width:760px){
+    .app-shell,.app-main,.workspace,.filter-panel{min-width:0;max-width:100%}
+    .cal-head{flex-wrap:wrap;gap:8px}
+    .cal-head h2{min-width:0;flex:1 1 115px;margin:0}
+    .cal-head .today{margin-left:auto}
+    .filter-footer{flex-wrap:wrap;gap:8px}
+    .filter-footer>span{min-width:0;max-width:100%}
+    .filter-footer>span:last-child{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+    .calendar-wrap,.filter-toolbar,.side-menu,.stats{max-width:100%;overscroll-behavior-x:contain}
+    .row2{grid-template-columns:minmax(0,1fr)}
+    .modal{max-width:100%}
+  }
   @media(max-width:760px){.topbar{height:auto}.bar{padding:10px 12px;flex-wrap:wrap}.bar>.seg{order:3;width:100%;margin:0}.bar>.seg button{flex:1;justify-content:center}.top-actions{margin-left:auto}.top-actions .utility,.menu-wrap{display:none}.app-layout{min-height:0}.workspace{padding-inline:12px}.stats{margin-inline:-12px;padding-inline:12px;min-height:82px}.stat{min-width:92px;padding-inline:13px}.stat-today{min-width:250px}.daily-brief{grid-template-columns:1fr}.brief-day+ .brief-day{border-left:0;border-top:1px solid var(--line)}.filter-toolbar{display:flex;overflow-x:auto}.filter-toolbar .search-box{min-width:250px}.filter-toolbar .format-select{min-width:135px}.calendar-inner{min-width:760px}.cal-head h2{font-size:17px}.view-density{display:none}}
 
   /* Keep the complete desktop composition visible at normal browser zoom. */
