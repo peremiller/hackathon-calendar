@@ -936,27 +936,27 @@ function openForm(ev){
   $('#modal').innerHTML=`
     <button class="close" onclick="closeModal()" aria-label="Close"><i class="ph ph-x" aria-hidden="true"></i></button>
     <h2>${ev?'Edit':'Add'} Hackathon</h2>
-    <div class="field"><label>Name</label><input id="f_name" value="${esc(e.name)}" placeholder="e.g. AI Agents Hack 2026"></div>
+    <div class="field"><label for="f_name">Name</label><input id="f_name" value="${esc(e.name)}" placeholder="e.g. AI Agents Hack 2026"></div>
     <div class="row2">
-      <div class="field"><label>Start date</label><input id="f_start" type="date" value="${e.start}"></div>
-      <div class="field"><label>End date</label><input id="f_end" type="date" value="${e.end}"></div>
+      <div class="field"><label for="f_start">Start date</label><input id="f_start" type="date" value="${e.start}"></div>
+      <div class="field"><label for="f_end">End date</label><input id="f_end" type="date" value="${e.end}"></div>
     </div>
     <div class="row2">
-      <div class="field"><label>Registration opens (optional)</label><input id="f_regopen" type="date" value="${e.regOpen||''}"></div>
-      <div class="field"><label>Registration deadline (optional)</label><input id="f_regclose" type="date" value="${e.regClose||''}"></div>
+      <div class="field"><label for="f_regopen">Registration opens (optional)</label><input id="f_regopen" type="date" value="${e.regOpen||''}"></div>
+      <div class="field"><label for="f_regclose">Registration deadline (optional)</label><input id="f_regclose" type="date" value="${e.regClose||''}"></div>
     </div>
     <div class="row2">
-      <div class="field"><label>Format</label><select id="f_fmt">
+      <div class="field"><label for="f_fmt">Format</label><select id="f_fmt">
         ${['Online','In-person','Hybrid'].map(f=>`<option ${e.fmt===f?'selected':''}>${f}</option>`).join('')}
       </select></div>
-      <div class="field"><label>Location</label><input id="f_loc" value="${esc(e.loc)}" placeholder="City, Country / Virtual"></div>
+      <div class="field"><label for="f_loc">Location</label><input id="f_loc" value="${esc(e.loc)}" placeholder="City, Country / Virtual"></div>
     </div>
-    <div class="field"><label>Who can join</label><select id="f_elig">
+    <div class="field"><label for="f_elig">Who can join</label><select id="f_elig">
       ${[['Everyone','Open to all (non-students welcome)'],['Students','Students only']].map(([v,t])=>`<option value="${v}" ${e.eligibility===v?'selected':''}>${t}</option>`).join('')}
     </select></div>
-    <div class="field"><label>Tech tags (comma-separated)</label><input id="f_tags" value="${esc(e.tags.join(', '))}" placeholder="AI/ML, Web3, …"></div>
-    <div class="field"><label>Website / register URL</label><input id="f_url" value="${esc(e.url||'')}" placeholder="https://…"></div>
-    <div class="field"><label>Description</label><textarea id="f_desc" rows="3" placeholder="What's it about?">${esc(e.desc||'')}</textarea></div>
+    <div class="field"><label for="f_tags">Tech tags (comma-separated)</label><input id="f_tags" value="${esc(e.tags.join(', '))}" placeholder="AI/ML, Web3, …"></div>
+    <div class="field"><label for="f_url">Website / register URL</label><input id="f_url" value="${esc(e.url||'')}" placeholder="https://…"></div>
+    <div class="field"><label for="f_desc">Description</label><textarea id="f_desc" rows="3" placeholder="What's it about?">${esc(e.desc||'')}</textarea></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">Cancel</button>
       <button class="btn primary" onclick="saveForm('${ev?ev.id:''}')">Save</button>
@@ -1231,21 +1231,21 @@ function openImport(){
     <button class="close" onclick="closeModal()" aria-label="Close"><i class="ph ph-x" aria-hidden="true"></i></button>
     <h2>Import events</h2>
     <p style="color:var(--muted);font-size:13px;margin:4px 0 0">Pull events from a <b>Luma</b> / calendar feed, or paste messages from <b>Discord</b> / <b>WhatsApp</b>. HackCal detects date, title, format, location, tech tags &amp; link — review before importing.</p>
-    <div class="field"><label>Source</label>
+    <div class="field"><label for="imp_src">Source</label>
       <select id="imp_src" onchange="impSrcChange()">
         <option value="Luma">Luma / calendar feed (.ics)</option>
         <option value="Discord">Discord</option><option value="WhatsApp">WhatsApp</option><option value="Import">Other / mixed</option>
       </select>
     </div>
     <div class="field" id="imp_urlrow">
-      <label>Luma subscription or .ics feed URL</label>
+      <label for="imp_url">Luma subscription or .ics feed URL</label>
       <div style="display:flex;gap:8px">
         <input id="imp_url" style="flex:1" value="${esc(savedIcs)}" placeholder="Paste a lu.ma/event link, a Subscribe iCal link, or any .ics / webcal:// URL">
         <button class="btn secondary" id="imp_fetch" onclick="importFetch()"><i class="ph ph-download-simple" aria-hidden="true"></i>Fetch feed</button>
       </div>
       <div style="color:var(--muted);font-size:12px;margin-top:4px">Paste a single <b>lu.ma event page link</b> (e.g. <code>lu.ma/abc123</code>) and HackCal finds its .ics automatically — or for a whole calendar, open it → <b>Subscribe</b> → copy the iCal / webcal link.</div>
     </div>
-    <div class="field"><label id="imp_textlabel">Pasted text or raw .ics</label>
+    <div class="field"><label id="imp_textlabel" for="imp_text">Pasted text or raw .ics</label>
       <textarea id="imp_text" rows="7" placeholder="Paste an .ics feed, a Luma event, or chat messages…&#10;ETHGlobal Hackathon — March 14-16, 2026 at San Francisco. Register https://ethglobal.com"></textarea>
     </div>
     <div class="modal-actions">
@@ -1493,7 +1493,7 @@ function openLive(){
     </label>`;
   }).join('');
   $('#modal').innerHTML=`
-    <button class="close" onclick="closeModal()">×</button>
+    <button class="close" onclick="closeModal()" aria-label="Close">×</button>
     <h2 style="margin:0"><i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i> Live Sync</h2>
     <p style="color:var(--muted);font-size:13px;margin:6px 0 0">Pulls current listings straight from each site. Last synced: <b>${agoText(c.lastSync)}</b></p>
     <div style="margin-top:16px"><div class="fieldlabel">Sources</div>${rows}</div>
@@ -1621,10 +1621,50 @@ function resetFilters(tagsOnly=false){
 
 /* ---- modal helpers ---- */
 let modalMode='';   // 'detail' | 'form' | 'import' — gates swipe/arrow navigation
-function showModal(){$('#modalBg').classList.add('show')}
-function closeModal(){$('#modalBg').classList.remove('show'); modalMode='';}
+let modalReturnFocus=null;
+function showModal(){
+  const backdrop=$('#modalBg'), dialog=$('#modal');
+  const wasOpen=backdrop.classList.contains('show');
+  if(!wasOpen) modalReturnFocus=document.activeElement;
+  const heading=dialog.querySelector('h2');
+  if(heading){
+    heading.id='hackcal-modal-heading';
+    heading.tabIndex=-1;
+    dialog.setAttribute('aria-labelledby',heading.id);
+  }
+  backdrop.classList.add('show');
+  // Re-rendering a detail view removes the previously focused child.
+  if(!wasOpen || !dialog.contains(document.activeElement)){
+    (heading||dialog.querySelector('button,input,select,textarea')||dialog).focus();
+  }
+}
+function closeModal(){
+  const backdrop=$('#modalBg');
+  if(!backdrop.classList.contains('show')) return;
+  backdrop.classList.remove('show');
+  modalMode='';
+  const trigger=modalReturnFocus;
+  modalReturnFocus=null;
+  if(trigger && trigger.isConnected && typeof trigger.focus==='function') trigger.focus();
+}
 $('#modalBg').onclick=e=>{if(e.target===$('#modalBg'))closeModal()};
 document.addEventListener('keydown',e=>{
+  if(e.key==='Tab' && $('#modalBg').classList.contains('show')){
+    const dialog=$('#modal');
+    const focusable=[...dialog.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+      .filter(el=>!el.hidden && el.getClientRects().length);
+    if(focusable.length){
+      const first=focusable[0], last=focusable[focusable.length-1], current=document.activeElement;
+      if(e.shiftKey && (current===first || current.id==='hackcal-modal-heading' || !dialog.contains(current))){
+        e.preventDefault();last.focus();
+      }else if(!e.shiftKey && (current===last || !dialog.contains(current))){
+        e.preventDefault();first.focus();
+      }
+    }else{
+      e.preventDefault();dialog.querySelector('h2')?.focus();
+    }
+    return;
+  }
   if(e.key==='Escape'){closeModal();$('#locMenu').hidden=true;$('#locFilter').setAttribute('aria-expanded','false');return}
   if(modalMode==='detail'){
     if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();navDetail(1)}
