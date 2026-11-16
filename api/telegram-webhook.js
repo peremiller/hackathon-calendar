@@ -18,6 +18,10 @@ import {
   SCOPE_LABEL, REGION_LABEL
 } from './_lib/menu.mjs';
 
+// Never echo provider exceptions to webhook clients or Telegram chats: those
+// errors may contain account identifiers, upstream paths, or credentials.
+const SAFE_UPDATE_ERROR = 'Unable to process this Telegram update';
+
 const HELP = [
   '<b>🚀 HackCal bot</b>',
   'A daily feed of hackathons and tech events for today and tomorrow,',
@@ -58,10 +62,10 @@ export default async function handler(req, res) {
   try {
     if (body.callback_query) return await onTap(body.callback_query, res);
     return await onMessage(body, res);
-  } catch (e) {
-    // Always 200 back to Telegram once an update is recognised — a non-2xx makes
-    // it retry the same update, which would double-send the digest.
-    return res.status(200).json({ ok: false, error: String(e.message || e) });
+  } catch (_error) {
+    // Return HTTP 200 to avoid Telegram retrying an update that may already
+    // have sent a message, but do not disclose private upstream failure data.
+    return res.status(200).json({ ok: false, error: SAFE_UPDATE_ERROR });
   }
 }
 
@@ -144,9 +148,9 @@ async function onMessage(body, res) {
     } else {
       return res.status(200).json({ ok: true, ignored: true });
     }
-  } catch (e) {
-    try { await send(chatId, `⚠️ ${esc(String(e.message || e))}`); } catch (_) { }
-    return res.status(200).json({ ok: false, error: String(e.message || e) });
+  } catch (_error) {
+    try { await send(chatId, `⚠️ ${SAFE_UPDATE_ERROR}`); } catch (_) { }
+    return res.status(200).json({ ok: false, error: SAFE_UPDATE_ERROR });
   }
   return res.status(200).json({ ok: true });
 }
