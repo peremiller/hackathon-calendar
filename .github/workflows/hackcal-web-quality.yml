@@ -6,6 +6,16 @@ on:
     paths:
       - index.html
       - api/ics-proxy.js
+      - api/telegram-webhook.js
+      - test/**
+      - scripts/qa/**
+      - .github/workflows/hackcal-web-quality.yml
+  pull_request:
+    branches: [master]
+    paths:
+      - index.html
+      - api/ics-proxy.js
+      - api/telegram-webhook.js
       - test/**
       - scripts/qa/**
       - .github/workflows/hackcal-web-quality.yml
