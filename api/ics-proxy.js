@@ -126,6 +126,12 @@ export async function grab(value, options = {}) {
 }
 
 export default async function handler(req, res) {
+  // Calendar subscription URLs can contain private tokens: never cache any response.
+  res.setHeader('Cache-Control', 'no-store');
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
   let url = (req.query && req.query.url) || '';
   if (Array.isArray(url)) url = url[0];
   url = String(url || '').trim();
