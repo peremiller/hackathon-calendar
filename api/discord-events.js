@@ -14,6 +14,8 @@
 //   4. Copy the channel ID (Developer Mode → right-click channel → Copy ID).
 
 export default async function handler(req, res) {
+  // Never let credentials, upstream errors, or channel contents enter shared caches.
+  res.setHeader('Cache-Control', 'no-store');
   const token = process.env.DISCORD_BOT_TOKEN;
   const channel = process.env.DISCORD_CHANNEL_ID;
   if (!token || !channel) {
@@ -29,8 +31,8 @@ export default async function handler(req, res) {
       { headers: { Authorization: `Bot ${token}` } }
     );
     if (!r.ok) {
-      const body = await r.text();
-      res.status(r.status).json({ error: `Discord API ${r.status}: ${body.slice(0, 200)}` });
+      // Discord's error body can include channel or deployment details.
+      res.status(r.status).json({ error: 'Discord events temporarily unavailable' });
       return;
     }
     const msgs = await r.json();
@@ -40,6 +42,7 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({ messages, count: messages.length });
   } catch (e) {
-    res.status(500).json({ error: String((e && e.message) || e) });
+    // A network error may contain proxy URLs, credentials, or private hostnames.
+    res.status(500).json({ error: 'Discord events temporarily unavailable' });
   }
 }
