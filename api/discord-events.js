@@ -16,6 +16,11 @@
 export default async function handler(req, res) {
   // Never let credentials, upstream errors, or channel contents enter shared caches.
   res.setHeader('Cache-Control', 'no-store');
+  // Event imports are read-only. Reject other methods before using bot credentials.
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
   const token = process.env.DISCORD_BOT_TOKEN;
   const channel = process.env.DISCORD_CHANNEL_ID;
   if (!token || !channel) {
