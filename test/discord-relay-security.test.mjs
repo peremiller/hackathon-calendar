@@ -15,6 +15,33 @@ function response() {
   };
 }
 
+test('Discord event imports are GET-only and reject other methods before fetching messages', async () => {
+  const previousFetch = globalThis.fetch;
+  const previousToken = process.env.DISCORD_BOT_TOKEN;
+  const previousChannel = process.env.DISCORD_CHANNEL_ID;
+  try {
+    process.env.DISCORD_BOT_TOKEN = 'isolated-test-token';
+    process.env.DISCORD_CHANNEL_ID = '123456';
+    let called = false;
+    globalThis.fetch = async () => { called = true; throw Error('must not contact Discord'); };
+    for (const method of ['POST', 'PUT', 'DELETE', 'OPTIONS']) {
+      const res = response();
+      await handler({ method }, res);
+      assert.equal(res.result().status, 405);
+      assert.deepEqual(res.result().body, { error: 'Method not allowed' });
+      assert.equal(res.result().headers.allow, 'GET');
+      assert.equal(res.result().headers['cache-control'], 'no-store');
+    }
+    assert.equal(called, false, 'Unsafe methods must not read upstream channel contents');
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousToken === undefined) delete process.env.DISCORD_BOT_TOKEN;
+    else process.env.DISCORD_BOT_TOKEN = previousToken;
+    if (previousChannel === undefined) delete process.env.DISCORD_CHANNEL_ID;
+    else process.env.DISCORD_CHANNEL_ID = previousChannel;
+  }
+});
+
 test('Discord relay keeps success shape but never exposes upstream or network error contents', async () => {
   const prevToken = process.env.DISCORD_BOT_TOKEN;
   const prevChannel = process.env.DISCORD_CHANNEL_ID;
