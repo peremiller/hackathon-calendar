@@ -72,6 +72,21 @@ test('Discord relay keeps success shape but never exposes upstream or network er
     assert.deepEqual(res.result().body, { messages: ['Hackathon event', 'Tech meetup'], count: 2 });
     assert.equal(res.result().headers['cache-control'], 'no-store');
 
+    // Malformed upstream data must not masquerade as an empty successful sync.
+    for (const invalid of [{ messages: [] }, null, [{ content: 123 }], [null], [{}]]) {
+      globalThis.fetch = async () => ({ ok: true, json: async () => invalid });
+      res = response();
+      await handler({ method: 'GET' }, res);
+      assert.equal(res.result().status, 502);
+      assert.deepEqual(res.result().body, { error: 'Discord events temporarily unavailable' });
+      assert.equal(res.result().headers['cache-control'], 'no-store');
+    }
+    globalThis.fetch = async () => ({ ok: true, json: async () => [] });
+    res = response();
+    await handler({ method: 'GET' }, res);
+    assert.equal(res.result().status, 200);
+    assert.deepEqual(res.result().body, { messages: [], count: 0 });
+
     globalThis.fetch = async () => ({
       ok: false,
       status: 403,
