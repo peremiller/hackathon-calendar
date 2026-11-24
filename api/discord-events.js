@@ -41,9 +41,11 @@ export default async function handler(req, res) {
       return;
     }
     const msgs = await r.json();
-    const messages = (Array.isArray(msgs) ? msgs : [])
-      .map(m => m && m.content)
-      .filter(Boolean);
+    // A malformed upstream payload is not an empty, successfully synced channel.
+    if (!Array.isArray(msgs) || msgs.some(m => !m || typeof m.content !== 'string')) {
+      return res.status(502).json({ error: 'Discord events temporarily unavailable' });
+    }
+    const messages = msgs.map(m => m.content).filter(Boolean);
     res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({ messages, count: messages.length });
   } catch (e) {
