@@ -33,7 +33,7 @@ export default async function handler(req, res) {
   try {
     const r = await fetch(
       `https://discord.com/api/v10/channels/${channel}/messages?limit=50`,
-      { headers: { Authorization: `Bot ${token}` } }
+      { headers: { Authorization: `Bot ${token}` }, signal: AbortSignal.timeout(8000) }
     );
     if (!r.ok) {
       // Discord's error body can include channel or deployment details.
