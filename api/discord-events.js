@@ -14,6 +14,13 @@
 //   4. Copy the channel ID (Developer Mode → right-click channel → Copy ID).
 
 export default async function handler(req, res) {
+  // Never let credentials, upstream errors, or channel contents enter shared caches.
+  res.setHeader('Cache-Control', 'no-store');
+  // Event imports are read-only. Reject other methods before using bot credentials.
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
   const token = process.env.DISCORD_BOT_TOKEN;
   const channel = process.env.DISCORD_CHANNEL_ID;
   if (!token || !channel) {
@@ -26,20 +33,23 @@ export default async function handler(req, res) {
   try {
     const r = await fetch(
       `https://discord.com/api/v10/channels/${channel}/messages?limit=50`,
-      { headers: { Authorization: `Bot ${token}` } }
+      { headers: { Authorization: `Bot ${token}` }, signal: AbortSignal.timeout(8000) }
     );
     if (!r.ok) {
-      const body = await r.text();
-      res.status(r.status).json({ error: `Discord API ${r.status}: ${body.slice(0, 200)}` });
+      // Discord's error body can include channel or deployment details.
+      res.status(r.status).json({ error: 'Discord events temporarily unavailable' });
       return;
     }
     const msgs = await r.json();
-    const messages = (Array.isArray(msgs) ? msgs : [])
-      .map(m => m && m.content)
-      .filter(Boolean);
+    // A malformed upstream payload is not an empty, successfully synced channel.
+    if (!Array.isArray(msgs) || msgs.some(m => !m || typeof m.content !== 'string')) {
+      return res.status(502).json({ error: 'Discord events temporarily unavailable' });
+    }
+    const messages = msgs.map(m => m.content).filter(Boolean);
     res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({ messages, count: messages.length });
   } catch (e) {
-    res.status(500).json({ error: String((e && e.message) || e) });
+    // A network error may contain proxy URLs, credentials, or private hostnames.
+    res.status(500).json({ error: 'Discord events temporarily unavailable' });
   }
 }

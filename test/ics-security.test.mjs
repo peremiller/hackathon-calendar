@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {EventEmitter} from 'node:events';
-import {grab, isPublicAddress, validateFeedURL} from '../api/ics-proxy.js';
+import handler, {grab, isPublicAddress, validateFeedURL} from '../api/ics-proxy.js';
 
 test('calendar importer rejects local, internal, metadata, credentials and nonstandard ports', () => {
   for(const url of [
@@ -107,4 +107,29 @@ test('large remote feed is rejected instead of buffering unbounded response', as
     }),
     /allowed size/
   );
+});
+
+test('ICS imports are GET-only and every response is non-cacheable', async () => {
+  function response() {
+    const headers = {};
+    let status = 200, payload;
+    return {
+      setHeader(key, val) { headers[key.toLowerCase()] = val; },
+      status(code) { status = code; return this; },
+      json(value) { payload = value; return this; },
+      result() { return {headers, status, payload}; }
+    };
+  }
+  const rejected = response();
+  await handler({method:'POST', query:{url:'https://example.com/private.ics'}}, rejected);
+  assert.equal(rejected.result().status, 405);
+  assert.equal(rejected.result().headers['allow'], 'GET');
+  assert.equal(rejected.result().headers['cache-control'], 'no-store');
+  assert.deepEqual(rejected.result().payload, {error:'Method not allowed'});
+
+  const missing = response();
+  await handler({method:'GET', query:{}}, missing);
+  assert.equal(missing.result().status, 400);
+  assert.equal(missing.result().headers['cache-control'], 'no-store');
+  assert.deepEqual(missing.result().payload, {error:'Missing ?url parameter'});
 });
