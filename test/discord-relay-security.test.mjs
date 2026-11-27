@@ -58,7 +58,7 @@ test('Discord relay keeps success shape but never exposes upstream or network er
     process.env.DISCORD_CHANNEL_ID = '123456';
     let requested;
     globalThis.fetch = async (url, options) => {
-      requested = { url, authorization: options.headers.Authorization };
+      requested = { url, authorization: options.headers.Authorization, signal: options.signal };
       return {
         ok: true,
         json: async () => [{ content: 'Hackathon event' }, { content: '' }, { content: 'Tech meetup' }]
@@ -68,6 +68,8 @@ test('Discord relay keeps success shape but never exposes upstream or network er
     await handler({ method: 'GET' }, res);
     assert.equal(requested.url, 'https://discord.com/api/v10/channels/123456/messages?limit=50');
     assert.equal(requested.authorization, 'Bot test-bot-secret');
+    assert.ok(requested.signal instanceof AbortSignal);
+    assert.equal(requested.signal.aborted, false);
     assert.equal(res.result().status, 200);
     assert.deepEqual(res.result().body, { messages: ['Hackathon event', 'Tech meetup'], count: 2 });
     assert.equal(res.result().headers['cache-control'], 'no-store');
